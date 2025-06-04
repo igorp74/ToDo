@@ -125,9 +125,11 @@ Usage: todo [global options] <command> [command options]
 
 # Examples
 This example shows very basic task creations and then updating projects and tags over task range.
+
 https://github.com/user-attachments/assets/40431cb8-039d-41ab-9458-3f461b982246
 
 You may define working hours and breaks, so you can see the working hours
+
 https://github.com/user-attachments/assets/ff19c45b-a9d4-4344-b492-ac6784dd742c
 
 
