@@ -74,7 +74,9 @@ func main() {
     // Update Note command
     updateNoteCmd := parser.NewCommand("update-note", "Update an existing note by ID.")
     updateNoteID := updateNoteCmd.Int("id", "i", &Options{Required: true, Help: "ID of the note to update"})
-    updateNoteDescription := updateNoteCmd.String("description", "d", &Options{Required: true, Help: "New description for the note"})
+    updateNoteDescription := updateNoteCmd.String("description", "d", &Options{Help: "New description for the note"})
+    updateNoteTimestamp := updateNoteCmd.String("timestamp", "ts", &Options{Help: "New timestamp for the note (YYYY-MM-DD HH:MM:SS or YYYY-MM-DD). Use empty string with flag to set current time."})
+
 
     // Delete Note command
     deleteNoteCmd := parser.NewCommand("delete-note", "Delete one or more notes by ID.")
@@ -211,7 +213,13 @@ func main() {
     case addNoteCmd.Parsed:
         tm.AddNoteToTask(int64(*addNoteTaskID), *addNoteDescription)
     case updateNoteCmd.Parsed:
-        tm.UpdateNote(int64(*updateNoteID), *updateNoteDescription)
+        // Check if at least one of description or timestamp is provided
+        if *updateNoteDescription == "" && !updateNoteCmd.GetFlag("timestamp").IsSet {
+            fmt.Println("At least one of --description or --timestamp must be provided for 'update-note' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+        tm.UpdateNote(int64(*updateNoteID), *updateNoteDescription, *updateNoteTimestamp, updateNoteCmd.GetFlag("timestamp").IsSet)
     case deleteNoteCmd.Parsed:
         noteIDsToDelete, parseErr := parseIDs(*deleteNoteIDs) // Use generic parseIDs for notes
         if parseErr != nil {
@@ -659,4 +667,3 @@ func (p *Parser) Usage(err error) string {
     }
     return sb.String()
 }
-

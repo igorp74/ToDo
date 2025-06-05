@@ -932,12 +932,41 @@ func (tm *TodoManager) GetNotesForTask(taskID int64) []Note {
     return notes
 }
 
-// UpdateNote updates the description of an existing note.
-func (tm *TodoManager) UpdateNote(noteID int64, description string) {
-    updateQuery := `
-        UPDATE task_notes SET description = ? WHERE id = ?
-    `
-    res, err := tm.db.Exec(updateQuery, description, noteID)
+// UpdateNote updates the description and/or timestamp of an existing note.
+func (tm *TodoManager) UpdateNote(noteID int64, description string, timestampStr string, isTimestampSet bool) {
+    updates := []string{}
+    args := []any{}
+
+    if description != "" {
+        updates = append(updates, "description = ?")
+        args = append(args, description)
+    }
+
+    if isTimestampSet {
+        var parsedTime NullableTime
+        if timestampStr == "" {
+            parsedTime = NullableTime{Time: time.Now(), Valid: true} // Default to current time if flag is present but value is empty
+        } else {
+            var err error
+            parsedTime, err = ParseDateTime(timestampStr)
+            if err != nil {
+                log.Fatalf("Invalid timestamp format for note %d: %v", noteID, err)
+            }
+        }
+        sqlParsedTime, _ := parsedTime.Value()
+        updates = append(updates, "timestamp = ?")
+        args = append(args, sqlParsedTime)
+    }
+
+    if len(updates) == 0 {
+        fmt.Printf("No update parameters provided for note ID %d.\n", noteID)
+        return
+    }
+
+    updateQuery := fmt.Sprintf("UPDATE task_notes SET %s WHERE id = ?", strings.Join(updates, ", "))
+    args = append(args, noteID)
+
+    res, err := tm.db.Exec(updateQuery, args...)
     if err != nil {
         log.Fatalf("Error updating note %d: %v", noteID, err)
     }
@@ -946,7 +975,7 @@ func (tm *TodoManager) UpdateNote(noteID int64, description string) {
         log.Fatalf("Error checking rows affected for note update: %v", err)
     }
     if rowsAffected == 0 {
-        fmt.Printf("Note %d not found or description was not changed.\n", noteID)
+        fmt.Printf("Note %d not found or values were not changed.\n", noteID)
     } else {
         fmt.Printf("Note %d updated successfully.\n", noteID)
     }
@@ -994,4 +1023,3 @@ func (tm *TodoManager) DeleteNotes(noteIDs []int64) {
         log.Fatalf("Error committing note deletion transaction: %v", err)
     }
 }
-
