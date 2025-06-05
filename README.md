@@ -26,17 +26,18 @@ This last step will create **todo.db** in your home folder
 
 ## HELP
 
+
 Usage: todo [global options] <command> [command options]
   A simple CLI todo application.
 
-## Global Options:
+**Global Options**:
 
-`  --db-path     Custom path and name for the database file (e.g., /path/to/my/todo.db)`
+  --db-path     Custom path and name for the database file (e.g., /path/to/my/todo.db)
 
 ## Commands:
 
-  **add**   Add a new todo task.
-
+  add   Add a new todo task.
+  
     -t, --title Title of the task (required)
     -d, --description   Description of the task
     -p, --project       Project name (will be created if not exists)
@@ -51,13 +52,13 @@ Usage: todo [global options] <command> [command options]
     -st, --status       Initial status of the task (pending, completed, cancelled, waiting) (default: pending)
 
   **del**   Delete a task by ID.
-
+  
     --ids       Comma-separated IDs or ID ranges of tasks to delete (e.g., '1,2,3-5,10')
     -i, --id    ID of a single task to delete (use -ids for multiple or ranges)
     -C, --complete      Mark task as completed instead of deleting (for recurring tasks)
 
   **update**        Update an existing task.
-
+  
     --ids       Comma-separated IDs or ID ranges of tasks to update (e.g., '1,2,3-5,10')
     -i, --id    ID of a single task to update (use -ids for multiple or ranges)
     -t, --title New title of the task
@@ -82,8 +83,23 @@ Usage: todo [global options] <command> [command options]
     --clear-r   Clear recurrence
     --clear-wait        Clear waiting period
 
-  **list**  List tasks.
+  **add-note**      Add a new note to a task.
+  
+    -i, --task-id       ID of the task to add a note to (required)
+    -d, --description   Description of the note (required)
 
+  **update-note**   Update an existing note by its permanent database ID.
+  
+    -n, --id    Permanent database ID of the note to update (as shown in 'list' command) (required)
+    -d, --description   New description for the note
+    -ts, --timestamp    New timestamp for the note (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
+
+  **delete-note**   Delete one or more notes by ID.
+  
+    --ids       Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10') (required)
+
+  **list**  List tasks.
+  
     -p, --project       Filter by project name
     -c, --context       Filter by context name
     -T, --tag   Filter by tag name
@@ -95,9 +111,10 @@ Usage: todo [global options] <command> [command options]
     --sort-by   Sort by field (id, title, start_date, due_date, status, project) (default: due_date)
     --order     Sort order (asc, desc) (default: asc)
     -f, --format        Output format: 0=Full, 1=Condensed, 2=Minimal (default: 0)
+    -n, --notes Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes) (default: none)
 
   **holiday**       Manage holidays.
-
+  
     Subcommands for holiday:
       holiday add       Add a new holiday.
           -d, --date    Date of the holiday (YYYY-MM-DD) (required)
@@ -105,7 +122,7 @@ Usage: todo [global options] <command> [command options]
       holiday list      List all holidays.
 
   **workhours**     Manage working hours.
-
+  
     Subcommands for workhours:
       workhours set     Set working hours for a day of the week.
           -d, --day     Day of week (0=Sunday, 1=Monday, ..., 6=Saturday) (required)
@@ -126,11 +143,6 @@ Usage: todo [global options] <command> [command options]
 # Examples
 This example shows very basic task creations and then updating projects and tags over task range.
 
-https://github.com/user-attachments/assets/40431cb8-039d-41ab-9458-3f461b982246
-
-You may define working hours and breaks, so you can see the working hours
-
-https://github.com/user-attachments/assets/ff19c45b-a9d4-4344-b492-ac6784dd742c
 
 
 
