@@ -1,196 +1,196 @@
 package main
 
 import (
-    "database/sql"
-    "fmt"
-    "strings"
-    "time"
+	"database/sql"
+	"fmt"
+	"strings"
+	"time"
 )
 
 // parseDateTime parses a date/time string into NullableTime.
 // It attempts to parse various formats:YYYY-MM-DD HH:MM:SS,YYYY-MM-DD, MM-DD-YYYY, DD-MM-YYYY.
 func ParseDateTime(dateTimeStr string) (NullableTime, error) { // Changed to return NullableTime
-    if dateTimeStr == "" {
-        return NullableTime{Valid: false}, nil
-    }
+	if dateTimeStr == "" {
+		return NullableTime{Valid: false}, nil
+	}
 
-    layouts := []string{
-        "2006-01-02 15:04:05", // YYYY-MM-DD HH:MM:SS
-        "2006-01-02",          // YYYY-MM-DD
-        "01-02-2006",          // MM-DD-YYYY
-        "02-01-2006",          // DD-MM-YYYY
-    }
+	layouts := []string{
+		"2006-01-02 15:04:05", // YYYY-MM-DD HH:MM:SS
+		"2006-01-02",          // YYYY-MM-DD
+		"01-02-2006",          // MM-DD-YYYY
+		"02-01-2006",          // DD-MM-YYYY
+	}
 
-    for _, layout := range layouts {
-        t, err := time.Parse(layout, dateTimeStr)
-        if err == nil {
-            return NullableTime{Time: t, Valid: true}, nil
-        }
-    }
+	for _, layout := range layouts {
+		t, err := time.Parse(layout, dateTimeStr)
+		if err == nil {
+			return NullableTime{Time: t, Valid: true}, nil
+		}
+	}
 
-    return NullableTime{Valid: false}, fmt.Errorf("could not parse date/time '%s'. Please use YYYY-MM-DD HH:MM:SS, YYYY-MM-DD, MM-DD-YYYY, or DD-MM-YYYY format", dateTimeStr)
+	return NullableTime{Valid: false}, fmt.Errorf("could not parse date/time '%s'. Please use YYYY-MM-DD HH:MM:SS, YYYY-MM-DD, MM-DD-YYYY, or DD-MM-YYYY format", dateTimeStr)
 }
 
 // FormatDuration formats a time.Duration into a human-readable string (days, hours, minutes, seconds),
 // skipping any components that are zero. This is for general calendar duration.
 func FormatDuration(d time.Duration) string { // Renamed to FormatDuration
-    totalSeconds := int(d.Seconds())
-    if totalSeconds == 0 {
-        return "0s" // Changed to a shorter format for minimal display
-    }
+	totalSeconds := int(d.Seconds())
+	if totalSeconds == 0 {
+		return "0s" // Changed to a shorter format for minimal display
+	}
 
-    days := totalSeconds / (24 * 3600)
-    remainingSecondsAfterDays := totalSeconds % (24 * 3600)
-    hours := remainingSecondsAfterDays / 3600
-    minutes := (remainingSecondsAfterDays % 3600) / 60
-    seconds := remainingSecondsAfterDays % 60
+	days := totalSeconds / (24 * 3600)
+	remainingSecondsAfterDays := totalSeconds % (24 * 3600)
+	hours := remainingSecondsAfterDays / 3600
+	minutes := (remainingSecondsAfterDays % 3600) / 60
+	seconds := remainingSecondsAfterDays % 60
 
-    parts := []string{}
-    if days > 0 {
-        parts = append(parts, fmt.Sprintf("%dd", days))
-    }
-    if hours > 0 {
-        parts = append(parts, fmt.Sprintf("%dh", hours))
-    }
-    if minutes > 0 {
-        parts = append(parts, fmt.Sprintf("%dm", minutes))
-    }
-    if seconds > 0 {
-        parts = append(parts, fmt.Sprintf("%ds", seconds))
-    }
+	parts := []string{}
+	if days > 0 {
+		parts = append(parts, fmt.Sprintf("%dd", days))
+	}
+	if hours > 0 {
+		parts = append(parts, fmt.Sprintf("%dh", hours))
+	}
+	if minutes > 0 {
+		parts = append(parts, fmt.Sprintf("%dm", minutes))
+	}
+	if seconds > 0 {
+		parts = append(parts, fmt.Sprintf("%ds", seconds))
+	}
 
-    return strings.Join(parts, " ") // Join with space for shorter output
+	return strings.Join(parts, " ") // Join with space for shorter output
 }
 
 // FormatWorkingHoursDisplay formats a time.Duration into a human-readable string
 // specifically for working hours, assuming an 8-hour working day for 'days' calculation.
 // It skips any components that are zero.
 func FormatWorkingHoursDisplay(d time.Duration) string { // Renamed to FormatWorkingHoursDisplay
-    totalSeconds := int(d.Seconds())
-    if totalSeconds == 0 {
-        return "0s" // Changed to a shorter format for minimal display
-    }
+	totalSeconds := int(d.Seconds())
+	if totalSeconds == 0 {
+		return "0s" // Changed to a shorter format for minimal display
+	}
 
-    // Assume 8 hours per working day for display purposes when converting to "working days"
-    workingHoursPerDay := 8
-    secondsPerWorkingDay := workingHoursPerDay * 3600
+	// Assume 8 hours per working day for display purposes when converting to "working days"
+	workingHoursPerDay := 8
+	secondsPerWorkingDay := workingHoursPerDay * 3600
 
-    workingDays := totalSeconds / secondsPerWorkingDay
-    remainingSeconds := totalSeconds % secondsPerWorkingDay
+	workingDays := totalSeconds / secondsPerWorkingDay
+	remainingSeconds := totalSeconds % secondsPerWorkingDay
 
-    hours := remainingSeconds / 3600
-    minutes := (remainingSeconds % 3600) / 60
-    seconds := remainingSeconds % 60
+	hours := remainingSeconds / 3600
+	minutes := (remainingSeconds % 3600) / 60
+	seconds := remainingSeconds % 60
 
-    parts := []string{}
-    if workingDays > 0 {
-        parts = append(parts, fmt.Sprintf("%dwd", workingDays)) // "wd" for working days
-    }
-    if hours > 0 {
-        parts = append(parts, fmt.Sprintf("%dh", hours))
-    }
-    if minutes > 0 {
-        parts = append(parts, fmt.Sprintf("%dm", minutes))
-    }
-    if seconds > 0 {
-        parts = append(parts, fmt.Sprintf("%ds", seconds))
-    }
+	parts := []string{}
+	if workingDays > 0 {
+		parts = append(parts, fmt.Sprintf("%dwd", workingDays)) // "wd" for working days
+	}
+	if hours > 0 {
+		parts = append(parts, fmt.Sprintf("%dh", hours))
+	}
+	if minutes > 0 {
+		parts = append(parts, fmt.Sprintf("%dm", minutes))
+	}
+	if seconds > 0 {
+		parts = append(parts, fmt.Sprintf("%ds", seconds))
+	}
 
-    if len(parts) == 0 {
-        return "0s" // Fallback if all components are zero after calculation
-    }
-    return strings.Join(parts, " ") // Join with space for shorter output
+	if len(parts) == 0 {
+		return "0s" // Fallback if all components are zero after calculation
+	}
+	return strings.Join(parts, " ") // Join with space for shorter output
 }
 
 // FormatDisplayDateTime formats a NullableTime into the desired "WYY#WK DayYYYY-MM-DD HH:MM:SS" format.
 // Returns an empty string if the NullableTime is not valid.
 func FormatDisplayDateTime(nt NullableTime) string { // Changed to accept NullableTime
-    if !nt.Valid {
-        return "N/A" // Consistent with other "N/A" for invalid dates
-    }
-    t := nt.Time
-    // isoYear, isoWeek := t.ISOWeek()
-    dayAbbr := t.Format("Mon")
-    formattedTime := t.Format("2006-01-02 15:04:05")
-    // return fmt.Sprintf("W%02d#%02d %s %s", isoYear%100, isoWeek, dayAbbr, formattedTime)
-    return fmt.Sprintf("%s %s", dayAbbr, formattedTime)
+	if !nt.Valid {
+		return "N/A" // Consistent with other "N/A" for invalid dates
+	}
+	t := nt.Time
+	// isoYear, isoWeek := t.ISOWeek()
+	dayAbbr := t.Format("Mon")
+	formattedTime := t.Format("2006-01-02 15:04:05")
+	// return fmt.Sprintf("W%02d#%02d %s %s", isoYear%100, isoWeek, dayAbbr, formattedTime)
+	return fmt.Sprintf("%s %s", dayAbbr, formattedTime)
 }
 
 // CalculateCalendarDuration calculates the duration of a task in calendar time, excluding waiting time.
 // It ensures startDate is before or equal to endDate by swapping if necessary.
 func CalculateCalendarDuration(task Task) time.Duration { // Returns time.Duration
-    if !task.StartDate.Valid {
-        return 0 // Return zero duration if start date is missing
-    }
+	if !task.StartDate.Valid {
+		return 0 // Return zero duration if start date is missing
+	}
 
-    startDate := task.StartDate.Time
+	startDate := task.StartDate.Time
 
-    var endDate time.Time
-    if task.EndDate.Valid {
-        endDate = task.EndDate.Time
-    } else {
-        endDate = time.Now() // If not completed, duration to today
-    }
+	var endDate time.Time
+	if task.EndDate.Valid {
+		endDate = task.EndDate.Time
+	} else {
+		endDate = time.Now() // If not completed, duration to today
+	}
 
-    // Swap dates if start date is after end date to ensure positive duration
-    if startDate.After(endDate) {
-        startDate, endDate = endDate, startDate
-    }
+	// Swap dates if start date is after end date to ensure positive duration
+	if startDate.After(endDate) {
+		startDate, endDate = endDate, startDate
+	}
 
-    totalDuration := endDate.Sub(startDate)
-    waitingDuration := time.Duration(0)
+	totalDuration := endDate.Sub(startDate)
+	waitingDuration := time.Duration(0)
 
-    if task.StartWaitingDate.Valid && task.EndWaitingDate.Valid {
-        startWaiting := task.StartWaitingDate.Time
-        endWaiting := task.EndWaitingDate.Time
+	if task.StartWaitingDate.Valid && task.EndWaitingDate.Valid {
+		startWaiting := task.StartWaitingDate.Time
+		endWaiting := task.EndWaitingDate.Time
 
-        if startWaiting.Before(endWaiting) {
-            // Calculate intersection of task duration and waiting period
-            actualWaitStart := MaxTime(startDate, startWaiting)
-            actualWaitEnd := MinTime(endDate, endWaiting)
+		if startWaiting.Before(endWaiting) {
+			// Calculate intersection of task duration and waiting period
+			actualWaitStart := MaxTime(startDate, startWaiting)
+			actualWaitEnd := MinTime(endDate, endWaiting)
 
-            if actualWaitStart.Before(actualWaitEnd) {
-                waitingDuration = actualWaitEnd.Sub(actualWaitStart)
-            }
-        }
-    }
+			if actualWaitStart.Before(actualWaitEnd) {
+				waitingDuration = actualWaitEnd.Sub(actualWaitStart)
+			}
+		}
+	}
 
-    return totalDuration - waitingDuration
+	return totalDuration - waitingDuration
 }
 
 // CalculateDurationToDueDate calculates the remaining time until the due date.
 func CalculateDurationToDueDate(task Task) time.Duration { // Returns time.Duration
-    if !task.DueDate.Valid {
-        return 0 // Return zero duration if due date is missing
-    }
+	if !task.DueDate.Valid {
+		return 0 // Return zero duration if due date is missing
+	}
 
-    dueDate := task.DueDate.Time
-    now := time.Now()
+	dueDate := task.DueDate.Time
+	now := time.Now()
 
-    // If due date is in the past, return a negative duration or 0, depending on desired behavior.
-    // For now, let's return 0 if due date is in the past, as it's "no remaining time".
-    if dueDate.Before(now) {
-        return 0
-    }
+	// If due date is in the past, return a negative duration or 0, depending on desired behavior.
+	// For now, let's return 0 if due date is in the past, as it's "no remaining time".
+	if dueDate.Before(now) {
+		return 0
+	}
 
-    return dueDate.Sub(now)
+	return dueDate.Sub(now)
 }
 
 // CalculateWaitingDuration calculates the duration of the waiting period for a task.
 // It returns the duration as time.Duration.
 func CalculateWaitingDuration(task Task) time.Duration {
-    if !task.StartWaitingDate.Valid || !task.EndWaitingDate.Valid {
-        return 0 // No valid waiting period defined
-    }
+	if !task.StartWaitingDate.Valid || !task.EndWaitingDate.Valid {
+		return 0 // No valid waiting period defined
+	}
 
-    startWaiting := task.StartWaitingDate.Time
-    endWaiting := task.EndWaitingDate.Time
+	startWaiting := task.StartWaitingDate.Time
+	endWaiting := task.EndWaitingDate.Time
 
-    if startWaiting.After(endWaiting) {
-        return 0 // Invalid waiting period (start after end)
-    }
+	if startWaiting.After(endWaiting) {
+		return 0 // Invalid waiting period (start after end)
+	}
 
-    return endWaiting.Sub(startWaiting)
+	return endWaiting.Sub(startWaiting)
 }
 
 // Helper to get working hours for a specific day of week from the database.
@@ -200,11 +200,11 @@ func CalculateWaitingDuration(task Task) time.Duration {
 // Note: This function is currently not used directly after changes to CalculateWorkingHoursDuration
 // because CalculateWorkingHoursDuration now accepts the full workingHours map.
 func GetWorkingHoursForDay(db *sql.DB, dayOfWeek int) (startHour, endHour int, err error) {
-    err = db.QueryRow("SELECT start_hour, end_hour FROM working_hours WHERE day_of_week = ?", dayOfWeek).Scan(&startHour, &endHour)
-    if err == sql.ErrNoRows {
-        return 0, 0, nil // No specific working hours set for this day
-    }
-    return
+	err = db.QueryRow("SELECT start_hour, end_hour FROM working_hours WHERE day_of_week = ?", dayOfWeek).Scan(&startHour, &endHour)
+	if err == sql.ErrNoRows {
+		return 0, 0, nil // No specific working hours set for this day
+	}
+	return
 }
 
 // Helper to check if a given date is a holiday.
@@ -213,12 +213,12 @@ func GetWorkingHoursForDay(db *sql.DB, dayOfWeek int) (startHour, endHour int, e
 // Note: This function is currently not used directly after changes to CalculateWorkingHoursDuration
 // because CalculateWorkingHoursDuration now accepts the full holidays map.
 func IsHoliday(db *sql.DB, date time.Time) (bool, error) {
-    var count int
-    err := db.QueryRow("SELECT COUNT(*) FROM holidays WHERE date = ?", date.Format("2006-01-02")).Scan(&count)
-    if err != nil {
-        return false, fmt.Errorf("error checking holiday: %w", err)
-    }
-    return count > 0, nil
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM holidays WHERE date = ?", date.Format("2006-01-02")).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("error checking holiday: %w", err)
+	}
+	return count > 0, nil
 }
 
 // CalculateWorkingHoursDuration calculates working hours between two dates,
@@ -226,79 +226,79 @@ func IsHoliday(db *sql.DB, date time.Time) (bool, error) {
 // It ensures startDate is before or equal to endDate by swapping if necessary.
 // Returns the total working duration as time.Duration.
 func CalculateWorkingHoursDuration(db *sql.DB, start, end NullableTime, workingHours map[time.Weekday]WorkingHours, holidays map[string]Holiday) time.Duration {
-    if !start.Valid || !end.Valid {
-        return 0 // Return zero duration if dates are invalid
-    }
+	if !start.Valid || !end.Valid {
+		return 0 // Return zero duration if dates are invalid
+	}
 
-    startDate := start.Time
-    endDate := end.Time
+	startDate := start.Time
+	endDate := end.Time
 
-    // Swap dates if start date is after end date to ensure positive duration
-    if startDate.After(endDate) {
-        startDate, endDate = endDate, startDate
-    }
+	// Swap dates if start date is after end date to ensure positive duration
+	if startDate.After(endDate) {
+		startDate, endDate = endDate, startDate
+	}
 
-    totalWorkingDuration := time.Duration(0)
+	totalWorkingDuration := time.Duration(0)
 
-    currentDay := startDate.Truncate(24 * time.Hour)
-    // Iterate through each day from startDate to endDate (inclusive for the end day if it falls within working hours)
-    // Adding 24 * time.Hour to endDate ensures the end day is also considered if it has working hours.
-    for currentDay.Before(endDate.Add(24 * time.Hour).Truncate(24 * time.Hour)) {
-        dateKey := currentDay.Format("2006-01-02")
-        if _, isHol := holidays[dateKey]; isHol {
-            currentDay = currentDay.Add(24 * time.Hour)
-            continue // Skip holidays
-        }
+	currentDay := startDate.Truncate(24 * time.Hour)
+	// Iterate through each day from startDate to endDate (inclusive for the end day if it falls within working hours)
+	// Adding 24 * time.Hour to endDate ensures the end day is also considered if it has working hours.
+	for currentDay.Before(endDate.Add(24 * time.Hour).Truncate(24 * time.Hour)) {
+		dateKey := currentDay.Format("2006-01-02")
+		if _, isHol := holidays[dateKey]; isHol {
+			currentDay = currentDay.Add(24 * time.Hour)
+			continue // Skip holidays
+		}
 
-        dayOfWeek := currentDay.Weekday()
-        wh, hasWorkingHours := workingHours[dayOfWeek]
+		dayOfWeek := currentDay.Weekday()
+		wh, hasWorkingHours := workingHours[dayOfWeek]
 
-        // Check if working hours are defined and if there's a valid working period for the day
-        if hasWorkingHours && (wh.StartHour*60+wh.StartMinute < wh.EndHour*60+wh.EndMinute) {
-            dailyWorkStart := time.Date(currentDay.Year(), currentDay.Month(), currentDay.Day(), wh.StartHour, wh.StartMinute, 0, 0, currentDay.Location())
-            dailyWorkEnd := time.Date(currentDay.Year(), currentDay.Month(), currentDay.Day(), wh.EndHour, wh.EndMinute, 0, 0, currentDay.Location())
+		// Check if working hours are defined and if there's a valid working period for the day
+		if hasWorkingHours && (wh.StartHour*60+wh.StartMinute < wh.EndHour*60+wh.EndMinute) {
+			dailyWorkStart := time.Date(currentDay.Year(), currentDay.Month(), currentDay.Day(), wh.StartHour, wh.StartMinute, 0, 0, currentDay.Location())
+			dailyWorkEnd := time.Date(currentDay.Year(), currentDay.Month(), currentDay.Day(), wh.EndHour, wh.EndMinute, 0, 0, currentDay.Location())
 
-            // Handle overnight shifts (e.g., 22:00 to 06:00 next day)
-            if dailyWorkEnd.Before(dailyWorkStart) {
-                dailyWorkEnd = dailyWorkEnd.Add(24 * time.Hour)
-            }
+			// Handle overnight shifts (e.g., 22:00 to 06:00 next day)
+			if dailyWorkEnd.Before(dailyWorkStart) {
+				dailyWorkEnd = dailyWorkEnd.Add(24 * time.Hour)
+			}
 
-            // Calculate the intersection of the task's overall time range and the current day's working hours
-            effectiveIntersectionStart := MaxTime(startDate, dailyWorkStart)
-            effectiveIntersectionEnd := MinTime(endDate, dailyWorkEnd)
+			// Calculate the intersection of the task's overall time range and the current day's working hours
+			effectiveIntersectionStart := MaxTime(startDate, dailyWorkStart)
+			effectiveIntersectionEnd := MinTime(endDate, dailyWorkEnd)
 
-            // Add the duration of the intersection to the total working duration
-            if effectiveIntersectionStart.Before(effectiveIntersectionEnd) {
-                dailyWorkingTime := effectiveIntersectionEnd.Sub(effectiveIntersectionStart)
-                // Subtract break duration if the working period for the day is substantial enough to include a break
-                breakDuration := time.Duration(wh.BreakMinutes) * time.Minute
-                if dailyWorkingTime > breakDuration {
-                    dailyWorkingTime = 0 // If duration is less than break, no effective working time
-                } else {
-                    dailyWorkingTime -= breakDuration
-                }
-                totalWorkingDuration += dailyWorkingTime
-            }
-        }
-        currentDay = currentDay.Add(24 * time.Hour)
-    }
+			// Add the duration of the intersection to the total working duration
+			if effectiveIntersectionStart.Before(effectiveIntersectionEnd) {
+				dailyWorkingTime := effectiveIntersectionEnd.Sub(effectiveIntersectionStart)
+				// Subtract break duration if the working period for the day is substantial enough to include a break
+				breakDuration := time.Duration(wh.BreakMinutes) * time.Minute
+				if dailyWorkingTime > breakDuration { // Corrected logic: if there's enough time to work AFTER the break
+					dailyWorkingTime -= breakDuration
+				} else { // If the working time is less than or equal to the break duration
+					dailyWorkingTime = 0 // No effective working time after break
+				}
+				totalWorkingDuration += dailyWorkingTime
+			}
+		}
+		currentDay = currentDay.Add(24 * time.Hour)
+	}
 
-    return totalWorkingDuration
+	return totalWorkingDuration
 }
 
 // MaxTime returns the later of two times.
 func MaxTime(t1, t2 time.Time) time.Time {
-    if t1.After(t2) {
-        return t1
-    }
-    return t2
+	if t1.After(t2) {
+		return t1
+	}
+	return t2
 }
 
 // MinTime returns the earlier of two times.
 func MinTime(t1, t2 time.Time) time.Time {
-    if t1.Before(t2) {
-        return t1
-    }
-    return t2
+	if t1.Before(t2) {
+		return t1
+	}
+	return t2
 }
 
