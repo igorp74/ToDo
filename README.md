@@ -141,8 +141,9 @@ Usage: todo [global options] <command> [command options]
 
 
 # Examples
-This example shows very basic task creations and then updating projects and tags over task range.
+This example shows very basic task creations and then updating projects over task range.
 
 
 
+https://github.com/user-attachments/assets/dcd0e6b8-5d7d-4565-8ea8-eb2c8a1df01c
 
