@@ -66,6 +66,21 @@ func main() {
     updateClearRecurrence := updateCmd.Flag("clear-r", "", &Options{Help: "Clear recurrence"})
     updateClearWaiting := updateCmd.Flag("clear-wait", "", &Options{Help: "Clear waiting period"})
 
+    // Add Note command
+    addNoteCmd := parser.NewCommand("add-note", "Add a new note to a task.")
+    addNoteTaskID := addNoteCmd.Int("task-id", "i", &Options{Required: true, Help: "ID of the task to add a note to"})
+    addNoteDescription := addNoteCmd.String("description", "d", &Options{Required: true, Help: "Description of the note"})
+
+    // Update Note command
+    updateNoteCmd := parser.NewCommand("update-note", "Update an existing note by ID.")
+    updateNoteID := updateNoteCmd.Int("id", "i", &Options{Required: true, Help: "ID of the note to update"})
+    updateNoteDescription := updateNoteCmd.String("description", "d", &Options{Required: true, Help: "New description for the note"})
+
+    // Delete Note command
+    deleteNoteCmd := parser.NewCommand("delete-note", "Delete one or more notes by ID.")
+    deleteNoteIDs := deleteNoteCmd.String("ids", "", &Options{Required: true, Help: "Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10')"})
+
+
     // List command
     listCmd := parser.NewCommand("list", "List tasks.")
     listProject := listCmd.String("project", "p", &Options{Help: "Filter by project name"})
@@ -79,6 +94,8 @@ func main() {
     listSortBy := listCmd.String("sort-by", "", &Options{Default: "due_date", Help: "Sort by field (id, title, start_date, due_date, status, project)"})
     listOrder := listCmd.String("order", "", &Options{Default: "asc", Help: "Sort order (asc, desc)"})
     listFormat := listCmd.Int("format", "f", &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal"})
+    listNotes := listCmd.String("notes", "n", &Options{Default: "none", Help: "Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes)"})
+
 
     // Holiday commands
     holidayCmd := parser.NewCommand("holiday", "Manage holidays.")
@@ -143,7 +160,7 @@ func main() {
         var targetIDs []int64
         if *delIDs != "" {
             var parseErr error
-            targetIDs, parseErr = parseTaskIDs(*delIDs)
+            targetIDs, parseErr = parseIDs(*delIDs) // Use generic parseIDs
             if parseErr != nil {
                 fmt.Printf("Error parsing task IDs: %v\n", parseErr)
                 fmt.Println(parser.Usage(nil))
@@ -162,7 +179,7 @@ func main() {
         var targetIDs []int64
         if *updateIDs != "" {
             var parseErr error
-            targetIDs, parseErr = parseTaskIDs(*updateIDs)
+            targetIDs, parseErr = parseIDs(*updateIDs) // Use generic parseIDs
             if parseErr != nil {
                 fmt.Printf("Error parsing task IDs: %v\n", parseErr)
                 fmt.Println(parser.Usage(nil))
@@ -191,11 +208,22 @@ func main() {
         if err != nil {
             log.Fatalf("Error updating tasks: %v", err)
         }
-
+    case addNoteCmd.Parsed:
+        tm.AddNoteToTask(int64(*addNoteTaskID), *addNoteDescription)
+    case updateNoteCmd.Parsed:
+        tm.UpdateNote(int64(*updateNoteID), *updateNoteDescription)
+    case deleteNoteCmd.Parsed:
+        noteIDsToDelete, parseErr := parseIDs(*deleteNoteIDs) // Use generic parseIDs for notes
+        if parseErr != nil {
+            fmt.Printf("Error parsing note IDs: %v\n", parseErr)
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+        tm.DeleteNotes(noteIDsToDelete)
     case listCmd.Parsed:
         ListTasks(tm, *listProject, *listContext, *listTag, *listStatus,
             *listStartBefore, *listStartAfter, *listDueBefore, *listDueAfter,
-            *listSortBy, *listOrder, *listFormat)
+            *listSortBy, *listOrder, *listFormat, *listNotes)
 
     case holidayAddCmd.Parsed:
         tm.AddHoliday(*holidayAddDate, *holidayAddName)
@@ -216,9 +244,10 @@ func main() {
     }
 }
 
-// parseTaskIDs parses a comma-separated string of IDs and ID ranges
+// parseIDs parses a comma-separated string of IDs and ID ranges
 // (e.g., "1,3-5,8") into a unique slice of int64 IDs.
-func parseTaskIDs(idStr string) ([]int64, error) {
+// This function is now generic and can be used for tasks, notes, etc.
+func parseIDs(idStr string) ([]int64, error) {
     uniqueIDs := make(map[int64]bool)
     parts := strings.Split(idStr, ",")
 
@@ -622,6 +651,7 @@ func (p *Parser) Usage(err error) string {
                     if flag.Options != nil && flag.Options.Default != nil {
                         defaultValue = fmt.Sprintf(" (default: %v)", flag.Options.Default)
                     }
+                    // Changed \\n to \n to correctly render newlines
                     sb.WriteString(fmt.Sprintf("          %s--%s\t%s%s%s\n", short, flag.Name, flag.Options.Help, required, defaultValue))
                 }
             }
@@ -629,3 +659,4 @@ func (p *Parser) Usage(err error) string {
     }
     return sb.String()
 }
+

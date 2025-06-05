@@ -1,4 +1,3 @@
-// dateutils.go
 package main
 
 import (
@@ -110,10 +109,11 @@ func FormatDisplayDateTime(nt NullableTime) string { // Changed to accept Nullab
         return "N/A" // Consistent with other "N/A" for invalid dates
     }
     t := nt.Time
-    isoYear, isoWeek := t.ISOWeek()
+    // isoYear, isoWeek := t.ISOWeek()
     dayAbbr := t.Format("Mon")
     formattedTime := t.Format("2006-01-02 15:04:05")
-    return fmt.Sprintf("W%02d#%02d %s %s", isoYear%100, isoWeek, dayAbbr, formattedTime)
+    // return fmt.Sprintf("W%02d#%02d %s %s", isoYear%100, isoWeek, dayAbbr, formattedTime)
+    return fmt.Sprintf("%s %s", dayAbbr, formattedTime)
 }
 
 // CalculateCalendarDuration calculates the duration of a task in calendar time, excluding waiting time.
@@ -273,9 +273,9 @@ func CalculateWorkingHoursDuration(db *sql.DB, start, end NullableTime, workingH
                 // Subtract break duration if the working period for the day is substantial enough to include a break
                 breakDuration := time.Duration(wh.BreakMinutes) * time.Minute
                 if dailyWorkingTime > breakDuration {
-                    dailyWorkingTime -= breakDuration
-                } else {
                     dailyWorkingTime = 0 // If duration is less than break, no effective working time
+                } else {
+                    dailyWorkingTime -= breakDuration
                 }
                 totalWorkingDuration += dailyWorkingTime
             }
@@ -301,3 +301,4 @@ func MinTime(t1, t2 time.Time) time.Time {
     }
     return t2
 }
+

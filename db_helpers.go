@@ -1,4 +1,3 @@
-// db_helpers.go
 package main
 
 import (
@@ -36,6 +35,13 @@ func (nt NullableTime) Value() (sql.NullTime, error) {
     return sql.NullTime{Time: nt.Time, Valid: true}, nil
 }
 
+// Note represents a single note associated with a task.
+type Note struct {
+    ID          int64
+    Timestamp   NullableTime
+    Description sql.NullString
+}
+
 // Task represents a single todo task.
 type Task struct {
     ID                 int64
@@ -54,6 +60,7 @@ type Task struct {
     OriginalTaskID     sql.NullInt64  // Added: ID of the original recurring task
     Contexts           []string       // For display purposes, fetched from join table
     Tags               []string       // For display purposes, fetched from join table
+    Notes              []Note         // Added: For display purposes, fetched from notes table
 }
 
 // Holiday represents a public or personal holiday.
@@ -73,3 +80,4 @@ type WorkingHours struct {
     EndMinute   int // 0-59
     BreakMinutes int // Added: Duration of break in minutes
 }
+

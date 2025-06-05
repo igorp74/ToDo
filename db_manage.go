@@ -112,6 +112,14 @@ func (tm *TodoManager) initDB() {
         end_minute INTEGER NOT NULL DEFAULT 0,
         break_minutes INTEGER NOT NULL DEFAULT 0 -- Added break_minutes
     );
+
+    CREATE TABLE IF NOT EXISTS task_notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL,
+        timestamp DATETIME NOT NULL,
+        description TEXT NOT NULL,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    );
     `
     _, err := tm.db.Exec(schema)
     if err != nil {
@@ -839,7 +847,7 @@ func (tm *TodoManager) GetWorkingHours() (map[time.Weekday]WorkingHours, error) 
     for rows.Next() {
         var wh WorkingHours
         if err := rows.Scan(&wh.DayOfWeek, &wh.StartHour, &wh.StartMinute, &wh.EndHour, &wh.EndMinute, &wh.BreakMinutes); err != nil {
-            return nil, fmt.Errorf("failed to scan working hours: %w", err)
+            return nil, fmt.Errorf("failed to scan working hours: %v", err)
         }
         hours[time.Weekday(wh.DayOfWeek)] = wh
     }
@@ -859,7 +867,7 @@ func (tm *TodoManager) GetHolidays() (map[string]Holiday, error) { // Use map[YY
         var dateStr string
         var name string
         if err := rows.Scan(&dateStr, &name); err != nil {
-            return nil, fmt.Errorf("failed to scan holiday: %w", err)
+            return nil, fmt.Errorf("failed to scan holiday: %v", err)
         }
         parsedDate, err := time.Parse("2006-01-02", dateStr) // Assuming "YYYY-MM-DD" format
         if err != nil {
@@ -879,3 +887,111 @@ func (tm *TodoManager) CalculateWorkingDuration(start, end NullableTime, working
     // However, since workingHours and holidays maps are already fetched, pass them directly.
     return CalculateWorkingHoursDuration(tm.db, start, end, workingHours, holidays)
 }
+
+// AddNoteToTask adds a new note to a specific task.
+func (tm *TodoManager) AddNoteToTask(taskID int64, description string) {
+    insertQuery := `
+        INSERT INTO task_notes (task_id, timestamp, description)
+        VALUES (?, ?, ?)
+    `
+    _, err := tm.db.Exec(insertQuery, taskID, time.Now(), description)
+    if err != nil {
+        log.Fatalf("Error adding note to task %d: %v", taskID, err)
+    }
+    fmt.Printf("Note added to task %d successfully.\n", taskID)
+}
+
+// GetNotesForTask fetches notes for a given task, ordered by timestamp.
+func (tm *TodoManager) GetNotesForTask(taskID int64) []Note {
+    notes := []Note{}
+    query := `
+        SELECT id, timestamp, description FROM task_notes
+        WHERE task_id = ?
+        ORDER BY timestamp DESC
+    `
+    rows, err := tm.db.Query(query, taskID)
+    if err != nil {
+        log.Printf("Error getting notes for task %d: %v", taskID, err)
+        return notes
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var note Note
+        var timestamp sql.NullTime
+        var desc sql.NullString
+        if err := rows.Scan(&note.ID, &timestamp, &desc); err != nil {
+            log.Printf("Error scanning note for task %d: %v", taskID, err)
+            continue
+        }
+        // Removed the redundant line: note.ID = note.ID
+        note.Timestamp = NullableTime{Time: timestamp.Time, Valid: timestamp.Valid}
+        note.Description = desc
+        notes = append(notes, note)
+    }
+    return notes
+}
+
+// UpdateNote updates the description of an existing note.
+func (tm *TodoManager) UpdateNote(noteID int64, description string) {
+    updateQuery := `
+        UPDATE task_notes SET description = ? WHERE id = ?
+    `
+    res, err := tm.db.Exec(updateQuery, description, noteID)
+    if err != nil {
+        log.Fatalf("Error updating note %d: %v", noteID, err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Fatalf("Error checking rows affected for note update: %v", err)
+    }
+    if rowsAffected == 0 {
+        fmt.Printf("Note %d not found or description was not changed.\n", noteID)
+    } else {
+        fmt.Printf("Note %d updated successfully.\n", noteID)
+    }
+}
+
+// DeleteNotes deletes one or more notes by their IDs.
+func (tm *TodoManager) DeleteNotes(noteIDs []int64) {
+    if len(noteIDs) == 0 {
+        fmt.Println("No note IDs provided for deletion.")
+        return
+    }
+
+    // Start a transaction for multiple deletions
+    tx, err := tm.db.Begin()
+    if err != nil {
+        log.Fatalf("Error starting transaction for note deletion: %v", err)
+    }
+    defer tx.Rollback() // Ensure rollback if any deletion fails
+
+    deleteQuery := `DELETE FROM task_notes WHERE id = ?`
+    stmt, err := tx.Prepare(deleteQuery)
+    if err != nil {
+        log.Fatalf("Error preparing delete statement for notes: %v", err)
+    }
+    defer stmt.Close()
+
+    for _, id := range noteIDs {
+        res, err := stmt.Exec(id)
+        if err != nil {
+            log.Printf("Error deleting note %d: %v", id, err)
+            continue // Continue to next note even if one fails
+        }
+        rowsAffected, err := res.RowsAffected()
+        if err != nil {
+            log.Printf("Error checking rows affected for note %d deletion: %v", id, err)
+        }
+        if rowsAffected == 0 {
+            fmt.Printf("Note %d not found.\n", id)
+        } else {
+            fmt.Printf("Note %d deleted successfully.\n", id)
+        }
+    }
+
+    if err := tx.Commit(); err != nil {
+        log.Fatalf("Error committing note deletion transaction: %v", err)
+    }
+}
+
