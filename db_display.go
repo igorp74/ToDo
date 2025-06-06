@@ -62,44 +62,44 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         args = append(args, statusFilter)
     }
 
-    // Date filters
+    // Date filters - parse with local timezone and then convert to UTC for query
     if startBefore != "" {
-        whereClauses = append(whereClauses, "t.start_date <= ?")
-        parsed, err := ParseDateTime(startBefore)
+        parsed, err := ParseDateTime(startBefore, time.Local)
         if err != nil {
             log.Printf("Warning: Invalid start-before date format: %v", err)
         } else {
-            sqlParsed, _ := parsed.Value() // Get sql.NullTime
+            whereClauses = append(whereClauses, "t.start_date <= ?")
+            sqlParsed, _ := parsed.Value() // Get sql.NullTime (already UTC)
             args = append(args, sqlParsed)
         }
     }
     if startAfter != "" {
-        whereClauses = append(whereClauses, "t.start_date >= ?")
-        parsed, err := ParseDateTime(startAfter)
+        parsed, err := ParseDateTime(startAfter, time.Local)
         if err != nil {
             log.Printf("Warning: Invalid start-after date format: %v", err)
         } else {
-            sqlParsed, _ := parsed.Value() // Get sql.NullTime
+            whereClauses = append(whereClauses, "t.start_date >= ?")
+            sqlParsed, _ := parsed.Value() // Get sql.NullTime (already UTC)
             args = append(args, sqlParsed)
         }
     }
     if dueBefore != "" {
-        whereClauses = append(whereClauses, "t.due_date <= ?")
-        parsed, err := ParseDateTime(dueBefore)
+        parsed, err := ParseDateTime(dueBefore, time.Local)
         if err != nil {
             log.Printf("Warning: Invalid due-before date format: %v", err)
         } else {
-            sqlParsed, _ := parsed.Value() // Get sql.NullTime
+            whereClauses = append(whereClauses, "t.due_date <= ?")
+            sqlParsed, _ := parsed.Value() // Get sql.NullTime (already UTC)
             args = append(args, sqlParsed)
         }
     }
     if dueAfter != "" {
-        whereClauses = append(whereClauses, "t.due_date >= ?")
-        parsed, err := ParseDateTime(dueAfter)
+        parsed, err := ParseDateTime(dueAfter, time.Local)
         if err != nil {
             log.Printf("Warning: Invalid due-after date format: %v", err)
         } else {
-            sqlParsed, _ := parsed.Value() // Get sql.NullTime
+            whereClauses = append(whereClauses, "t.due_date >= ?")
+            sqlParsed, _ := parsed.Value() // Get sql.NullTime (already UTC)
             args = append(args, sqlParsed)
         }
     }
@@ -188,6 +188,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
         task.Description = desc
         task.ProjectName = project_name // Set the project name
+        // NullableTime will automatically convert scanned UTC time to local when accessing .Time
         task.StartDate = NullableTime{Time: startDate.Time, Valid: startDate.Valid}
         task.DueDate = NullableTime{Time: dueDate.Time, Valid: dueDate.Valid}
         task.EndDate = NullableTime{Time: endDate.Time, Valid: endDate.Valid}
@@ -239,12 +240,13 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             } else if task.Status != "completed" {
                 // For in-progress tasks, calculate from start to now
                 tempTask := task // Create a temporary task to pass to CalculateCalendarDuration
-                tempTask.EndDate = NullableTime{Time: time.Now(), Valid: true}
+                // Ensure time.Now() is consistently UTC for calculation purposes against UTC stored dates
+                tempTask.EndDate = NullableTime{Time: time.Now().UTC(), Valid: true}
                 totalDuration := CalculateCalendarDuration(tempTask)
                 totalDurationStr = FormatDuration(totalDuration)
 
                 // Calculate working duration up to now
-                workingDuration := tm.CalculateWorkingDuration(task.StartDate, NullableTime{Time: time.Now(), Valid: true}, workingHours, holidays)
+                workingDuration := tm.CalculateWorkingDuration(task.StartDate, NullableTime{Time: time.Now().UTC(), Valid: true}, workingHours, holidays)
                 workingDurationStr = FormatWorkingHoursDisplay(workingDuration) // Use FormatWorkingHoursDisplay from dateutils
             }
         }
@@ -468,6 +470,8 @@ func ListHolidays(tm *TodoManager) {
             log.Printf("Error scanning holiday: %v", err)
             continue
         }
+        // Holidays are stored as YYYY-MM-DD strings, no time component.
+        // Display them directly.
         fmt.Printf("  %s: %s\n", dateStr, name)
     }
     if !found {

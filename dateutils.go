@@ -7,11 +7,18 @@ import (
 	"time"
 )
 
-// parseDateTime parses a date/time string into NullableTime.
+// ParseDateTime parses a date/time string into NullableTime.
 // It attempts to parse various formats:YYYY-MM-DD HH:MM:SS,YYYY-MM-DD, MM-DD-YYYY, DD-MM-YYYY.
-func ParseDateTime(dateTimeStr string) (NullableTime, error) { // Changed to return NullableTime
+// The parsed time is always converted to UTC before being returned, for consistent storage.
+// If a location is provided, the string is parsed relative to that location; otherwise, UTC is assumed for parsing.
+func ParseDateTime(dateTimeStr string, loc *time.Location) (NullableTime, error) {
 	if dateTimeStr == "" {
 		return NullableTime{Valid: false}, nil
+	}
+
+	if loc == nil {
+		// Default to UTC if no location is provided for parsing input string
+		loc = time.UTC
 	}
 
 	layouts := []string{
@@ -22,9 +29,10 @@ func ParseDateTime(dateTimeStr string) (NullableTime, error) { // Changed to ret
 	}
 
 	for _, layout := range layouts {
-		t, err := time.Parse(layout, dateTimeStr)
+		t, err := time.ParseInLocation(layout, dateTimeStr, loc)
 		if err == nil {
-			return NullableTime{Time: t, Valid: true}, nil
+			// Always convert to UTC for storage
+			return NullableTime{Time: t.UTC(), Valid: true}, nil
 		}
 	}
 
@@ -102,17 +110,17 @@ func FormatWorkingHoursDisplay(d time.Duration) string { // Renamed to FormatWor
 	return strings.Join(parts, " ") // Join with space for shorter output
 }
 
-// FormatDisplayDateTime formats a NullableTime into the desired "WYY#WK DayYYYY-MM-DD HH:MM:SS" format.
-// Returns an empty string if the NullableTime is not valid.
+// FormatDisplayDateTime formats a NullableTime into the desired "Day YYYY-MM-DD HH:MM:SS" format.
+// It converts the stored UTC time to the local timezone for display.
+// Returns "N/A" if the NullableTime is not valid.
 func FormatDisplayDateTime(nt NullableTime) string { // Changed to accept NullableTime
 	if !nt.Valid {
 		return "N/A" // Consistent with other "N/A" for invalid dates
 	}
-	t := nt.Time
-	// isoYear, isoWeek := t.ISOWeek()
+	// Convert UTC time to local time for display
+	t := nt.Time.Local()
 	dayAbbr := t.Format("Mon")
 	formattedTime := t.Format("2006-01-02 15:04:05")
-	// return fmt.Sprintf("W%02d#%02d %s %s", isoYear%100, isoWeek, dayAbbr, formattedTime)
 	return fmt.Sprintf("%s %s", dayAbbr, formattedTime)
 }
 
@@ -123,13 +131,12 @@ func CalculateCalendarDuration(task Task) time.Duration { // Returns time.Durati
 		return 0 // Return zero duration if start date is missing
 	}
 
-	startDate := task.StartDate.Time
-
+	startDate := task.StartDate.Time.Local() // Convert to local for calculation
 	var endDate time.Time
 	if task.EndDate.Valid {
-		endDate = task.EndDate.Time
+		endDate = task.EndDate.Time.Local() // Convert to local for calculation
 	} else {
-		endDate = time.Now() // If not completed, duration to today
+		endDate = time.Now() // If not completed, duration to today (local time)
 	}
 
 	// Swap dates if start date is after end date to ensure positive duration
@@ -141,8 +148,8 @@ func CalculateCalendarDuration(task Task) time.Duration { // Returns time.Durati
 	waitingDuration := time.Duration(0)
 
 	if task.StartWaitingDate.Valid && task.EndWaitingDate.Valid {
-		startWaiting := task.StartWaitingDate.Time
-		endWaiting := task.EndWaitingDate.Time
+		startWaiting := task.StartWaitingDate.Time.Local() // Convert to local for calculation
+		endWaiting := task.EndWaitingDate.Time.Local()     // Convert to local for calculation
 
 		if startWaiting.Before(endWaiting) {
 			// Calculate intersection of task duration and waiting period
@@ -164,8 +171,8 @@ func CalculateDurationToDueDate(task Task) time.Duration { // Returns time.Durat
 		return 0 // Return zero duration if due date is missing
 	}
 
-	dueDate := task.DueDate.Time
-	now := time.Now()
+	dueDate := task.DueDate.Time.Local() // Convert to local for comparison
+	now := time.Now()                    // Local time
 
 	// If due date is in the past, return a negative duration or 0, depending on desired behavior.
 	// For now, let's return 0 if due date is in the past, as it's "no remaining time".
@@ -183,8 +190,8 @@ func CalculateWaitingDuration(task Task) time.Duration {
 		return 0 // No valid waiting period defined
 	}
 
-	startWaiting := task.StartWaitingDate.Time
-	endWaiting := task.EndWaitingDate.Time
+	startWaiting := task.StartWaitingDate.Time.Local() // Convert to local for calculation
+	endWaiting := task.EndWaitingDate.Time.Local()     // Convert to local for calculation
 
 	if startWaiting.After(endWaiting) {
 		return 0 // Invalid waiting period (start after end)
@@ -225,13 +232,15 @@ func IsHoliday(db *sql.DB, date time.Time) (bool, error) {
 // considering defined working hours and skipping holidays, and subtracting breaks.
 // It ensures startDate is before or equal to endDate by swapping if necessary.
 // Returns the total working duration as time.Duration.
+// All NullableTime inputs are assumed to be in UTC, and converted to local for calculations.
 func CalculateWorkingHoursDuration(db *sql.DB, start, end NullableTime, workingHours map[time.Weekday]WorkingHours, holidays map[string]Holiday) time.Duration {
 	if !start.Valid || !end.Valid {
 		return 0 // Return zero duration if dates are invalid
 	}
 
-	startDate := start.Time
-	endDate := end.Time
+	// Convert input UTC times to local time for consistent daily calculations
+	startDate := start.Time.Local()
+	endDate := end.Time.Local()
 
 	// Swap dates if start date is after end date to ensure positive duration
 	if startDate.After(endDate) {
@@ -255,6 +264,7 @@ func CalculateWorkingHoursDuration(db *sql.DB, start, end NullableTime, workingH
 
 		// Check if working hours are defined and if there's a valid working period for the day
 		if hasWorkingHours && (wh.StartHour*60+wh.StartMinute < wh.EndHour*60+wh.EndMinute) {
+			// Create daily working hour times in the current day's location (Local)
 			dailyWorkStart := time.Date(currentDay.Year(), currentDay.Month(), currentDay.Day(), wh.StartHour, wh.StartMinute, 0, 0, currentDay.Location())
 			dailyWorkEnd := time.Date(currentDay.Year(), currentDay.Month(), currentDay.Day(), wh.EndHour, wh.EndMinute, 0, 0, currentDay.Location())
 
@@ -301,4 +311,3 @@ func MinTime(t1, t2 time.Time) time.Time {
 	}
 	return t2
 }
-
