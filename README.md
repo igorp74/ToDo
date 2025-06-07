@@ -1,11 +1,10 @@
 # ToDo
-Simple CLI app with SQLite as a backend
+Simple CLI app for task management with SQLite as a backend
 
 ## BUILD:
 
 ### Prerequisites:
 1. Installed GO
-2. Editor of your choice
 
 ### Process
 1. Create a folder for your Golang workspace (i.e. **ws_todo**)
@@ -21,8 +20,14 @@ Simple CLI app with SQLite as a backend
     > todo add -t "Test"   (on Windows)
     > 
     > ./todo add -t "Test" (on Linux)
+    > This last step will create **todo.db** in your home folder
+7. Save the executable/binary in folder that is on system path
+    * `sudo cp todo /usr/local/bin` (on Linux)
+  
+    * Or add your path to the environment variable (Windows)
+    * `setx /M PATH "%PATH%;<your-new-path>"`
+    
 
-This last step will create **todo.db** in your home folder
 
 ## HELP
 
@@ -32,11 +37,11 @@ Usage: todo [global options] <command> [command options]
 
 **Global Options**:
 
-  --db-path     Custom path and name for the database file (e.g., /path/to/my/todo.db)
+  `--db-path`     Custom path and name for the database file (e.g., /path/to/my/todo.db)
 
 ## Commands:
 
-  add   Add a new todo task.
+  `add`  Add a new todo task.
   
     -t, --title Title of the task (required)
     -d, --description   Description of the task
@@ -51,13 +56,13 @@ Usage: todo [global options] <command> [command options]
     -ew, --end-waiting  End date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
     -st, --status       Initial status of the task (pending, completed, cancelled, waiting) (default: pending)
 
-  **del**   Delete a task by ID.
+  `del`   Delete a task by ID.
   
     --ids       Comma-separated IDs or ID ranges of tasks to delete (e.g., '1,2,3-5,10')
     -i, --id    ID of a single task to delete (use -ids for multiple or ranges)
     -C, --complete      Mark task as completed instead of deleting (for recurring tasks)
 
-  **update**        Update an existing task.
+  `update`        Update an existing task.
   
     --ids       Comma-separated IDs or ID ranges of tasks to update (e.g., '1,2,3-5,10')
     -i, --id    ID of a single task to update (use -ids for multiple or ranges)
@@ -83,22 +88,22 @@ Usage: todo [global options] <command> [command options]
     --clear-r   Clear recurrence
     --clear-wait        Clear waiting period
 
-  **add-note**      Add a new note to a task.
+  `add-note`      Add a new note to a task.
   
     -i, --task-id       ID of the task to add a note to (required)
     -d, --description   Description of the note (required)
 
-  **update-note**   Update an existing note by its permanent database ID.
+  `update-note`   Update an existing note by its permanent database ID.
   
     -n, --id    Permanent database ID of the note to update (as shown in 'list' command) (required)
     -d, --description   New description for the note
     -ts, --timestamp    New timestamp for the note (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
 
-  **delete-note**   Delete one or more notes by ID.
+  `delete-note`   Delete one or more notes by ID.
   
     --ids       Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10') (required)
 
-  **list**  List tasks.
+  `list`  List tasks.
   
     -p, --project       Filter by project name
     -c, --context       Filter by context name
@@ -113,7 +118,7 @@ Usage: todo [global options] <command> [command options]
     -f, --format        Output format: 0=Full, 1=Condensed, 2=Minimal (default: 0)
     -n, --notes Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes) (default: none)
 
-  **holiday**       Manage holidays.
+  `holiday`       Manage holidays.
   
     Subcommands for holiday:
       holiday add       Add a new holiday.
@@ -121,7 +126,7 @@ Usage: todo [global options] <command> [command options]
           -n, --name    Name of the holiday (required)
       holiday list      List all holidays.
 
-  **workhours**     Manage working hours.
+  `workhours`     Manage working hours.
   
     Subcommands for workhours:
       workhours set     Set working hours for a day of the week.
@@ -133,11 +138,11 @@ Usage: todo [global options] <command> [command options]
           -b, --break-minutes   Break duration in minutes for this day (default: 0)
       workhours list    List all defined working hours.
 
-  **projects**      List all projects.
+  `projects`      List all projects.
 
-  **contexts**      List all contexts.
+  `contexts`      List all contexts.
 
-  **tags**  List all tags.
+  `tags`  List all tags.
 
 
 # Examples
