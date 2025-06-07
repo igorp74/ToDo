@@ -148,10 +148,16 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
     if err != nil {
         log.Fatalf("Error loading working hours: %v", err)
     }
-    holidays, err := tm.GetHolidays()
+    // Fetch holidays as a map for quick lookup by date string
+    holidaysList, err := tm.GetHolidays() // Get as slice first
     if err != nil {
         log.Fatalf("Error loading holidays: %v", err)
     }
+    holidaysMap := make(map[string]Holiday) // Convert to map for calculation utility
+    for _, h := range holidaysList {
+        holidaysMap[h.Date.Time.Format("2006-01-02")] = h
+    }
+
 
     // // Print header based on format
     switch format {
@@ -235,7 +241,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 totalDuration := CalculateCalendarDuration(task) // Use CalculateCalendarDuration from dateutils
                 totalDurationStr = FormatDuration(totalDuration)
 
-                workingDuration := tm.CalculateWorkingDuration(task.StartDate, task.EndDate, workingHours, holidays)
+                workingDuration := tm.CalculateWorkingDuration(task.StartDate, task.EndDate, workingHours, holidaysMap) // Use holidaysMap
                 workingDurationStr = FormatWorkingHoursDisplay(workingDuration) // Use FormatWorkingHoursDisplay from dateutils
             } else if task.Status != "completed" {
                 // For in-progress tasks, calculate from start to now
@@ -246,7 +252,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 totalDurationStr = FormatDuration(totalDuration)
 
                 // Calculate working duration up to now
-                workingDuration := tm.CalculateWorkingDuration(task.StartDate, NullableTime{Time: time.Now().UTC(), Valid: true}, workingHours, holidays)
+                workingDuration := tm.CalculateWorkingDuration(task.StartDate, NullableTime{Time: time.Now().UTC(), Valid: true}, workingHours, holidaysMap) // Use holidaysMap
                 workingDurationStr = FormatWorkingHoursDisplay(workingDuration) // Use FormatWorkingHoursDisplay from dateutils
             }
         }
@@ -257,7 +263,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
         // Calculate working hours within the waiting period
         if task.StartWaitingDate.Valid && task.EndWaitingDate.Valid {
-            waitingWorkingDuration := tm.CalculateWorkingDuration(task.StartWaitingDate, task.EndWaitingDate, workingHours, holidays)
+            waitingWorkingDuration := tm.CalculateWorkingDuration(task.StartWaitingDate, task.EndWaitingDate, workingHours, holidaysMap) // Use holidaysMap
             waitingWorkingDurationStr = FormatWorkingHoursDisplay(waitingWorkingDuration)
         }
 
@@ -437,7 +443,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             case "cancelled":
                 status_str = style_bold + fg_red + "canceled" + style_reset
             case "waiting":
-                status_str = style_underline + fg_blue + "waiting" + style_reset
+                status_str = style_underline + fg_blue + "waiting" + style_reset // Corrected line
             }
 
             fmt.Printf("%-5d %s%-30s%s %s%-20s%s %s%-20s%s %s%-15s%s %-10s\n",
@@ -455,30 +461,22 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 // ListHolidays lists all configured holidays.
 // It now accepts *TodoManager.
 func ListHolidays(tm *TodoManager) {
-    rows, err := tm.db.Query("SELECT date, name FROM holidays ORDER BY date ASC")
+    holidays, err := tm.GetHolidays() // Get as slice
     if err != nil {
         log.Fatalf("Error listing holidays: %v", err)
     }
-    defer rows.Close()
 
     fmt.Println("--- Holidays ---")
-    found := false
-    for rows.Next() {
-        found = true
-        var dateStr, name string
-        if err := rows.Scan(&dateStr, &name); err != nil {
-            log.Printf("Error scanning holiday: %v", err)
-            continue
-        }
+    fmt.Println("  ID    Date        Name") // New header with ID
+    fmt.Println("------------------------------")
+    if len(holidays) == 0 {
+        fmt.Println("No holidays configured.")
+        return
+    }
+    for _, h := range holidays { // Iterate over slice
         // Holidays are stored as YYYY-MM-DD strings, no time component.
         // Display them directly.
-        fmt.Printf("  %s: %s\n", dateStr, name)
-    }
-    if !found {
-        fmt.Println("No holidays configured.")
-    }
-    if err = rows.Err(); err != nil {
-        log.Fatalf("Error after listing holidays: %v", err)
+        fmt.Printf("  %-5d %-10s %s\n", h.ID, h.Date.Time.Format("2006-01-02"), h.Name) // Print ID and formatted date
     }
 }
 

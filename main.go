@@ -18,53 +18,53 @@ func main() {
     dbPath := parser.String("db-path", "", &Options{Help: "Custom path and name for the database file (e.g., /path/to/my/todo.db)"})
 
     // Add command
-    addCmd                := parser.NewCommand("add", "Add a new todo task.")
-    addTitle              := addCmd.String("title", "t", &Options{Required: true, Help: "Title of the task"})
-    addDesc               := addCmd.String("description", "d", &Options{Help: "Description of the task"})
-    addProject            := addCmd.String("project", "p", &Options{Help: "Project name (will be created if not exists)"})
-    addStart              := addCmd.String("start-date", "s", &Options{Help: "Start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    addDue                := addCmd.String("due-date", "D", &Options{Help: "Due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    addRecurrence         := addCmd.String("recurrence", "r", &Options{Help: "Recurrence pattern (daily, weekly, monthly, yearly)"})
+    addCmd := parser.NewCommand("add", "Add a new todo task.")
+    addTitle := addCmd.String("title", "t", &Options{Required: true, Help: "Title of the task"})
+    addDesc := addCmd.String("description", "d", &Options{Help: "Description of the task"})
+    addProject := addCmd.String("project", "p", &Options{Help: "Project name (will be created if not exists)"})
+    addStart := addCmd.String("start-date", "s", &Options{Help: "Start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    addDue := addCmd.String("due-date", "D", &Options{Help: "Due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    addRecurrence := addCmd.String("recurrence", "r", &Options{Help: "Recurrence pattern (daily, weekly, monthly, yearly)"})
     addRecurrenceInterval := addCmd.Int("recurrence-interval", "ri", &Options{Default: 1, Help: "Interval for recurrence (e.g., 2 for every 2 days)"})
-    addContexts           := addCmd.StringList("contexts", "c", &Options{Help: "Comma-separated list of contexts (e.g., 'work,home')"})
-    addTags               := addCmd.StringList("tags", "T", &Options{Help: "Comma-separated list of tags (e.g., 'urgent,bug')"})
-    addStartWaiting       := addCmd.String("start-waiting", "sw", &Options{Help: "Start date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    addEndWaiting         := addCmd.String("end-waiting", "ew", &Options{Help: "End date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    addStatus             := addCmd.String("status", "st", &Options{Default: "pending", Help: "Initial status of the task (pending, completed, cancelled, waiting)"})
+    addContexts := addCmd.StringList("contexts", "c", &Options{Help: "Comma-separated list of contexts (e.g., 'work,home')"})
+    addTags := addCmd.StringList("tags", "T", &Options{Help: "Comma-separated list of tags (e.g., 'urgent,bug')"})
+    addStartWaiting := addCmd.String("start-waiting", "sw", &Options{Help: "Start date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    addEndWaiting := addCmd.String("end-waiting", "ew", &Options{Help: "End date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    addStatus := addCmd.String("status", "st", &Options{Default: "pending", Help: "Initial status of the task (pending, completed, cancelled, waiting)"})
 
     // Delete command
-    delCmd      := parser.NewCommand("del", "Delete a task by ID.")
-    delIDs      := delCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of tasks to delete (e.g., '1,2,3-5,10')"})
-    delID       := delCmd.Int("id", "i", &Options{Help: "ID of a single task to delete (use -ids for multiple or ranges)"})
+    delCmd := parser.NewCommand("del", "Delete a task by ID.")
+    delIDs := delCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of tasks to delete (e.g., '1,2,3-5,10')"})
+    delID := delCmd.Int("id", "i", &Options{Help: "ID of a single task to delete (use -ids for multiple or ranges)"})
     delComplete := delCmd.Flag("complete", "C", &Options{Help: "Mark task as completed instead of deleting (for recurring tasks)"})
 
     // Update command
-    updateCmd                := parser.NewCommand("update", "Update an existing task.")
-    updateIDs                := updateCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of tasks to update (e.g., '1,2,3-5,10')"})
-    updateID                 := updateCmd.Int("id", "i", &Options{Help: "ID of a single task to update (use -ids for multiple or ranges)"})
-    updateTitle              := updateCmd.String("title", "t", &Options{Help: "New title of the task"})
-    updateDesc               := updateCmd.String("description", "d", &Options{Help: "New description of the task"})
-    updateProject            := updateCmd.String("project", "p", &Options{Help: "New project name"})
-    updateStart              := updateCmd.String("start-date", "s", &Options{Help: "New start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    updateDue                := updateCmd.String("due-date", "D", &Options{Help: "New due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    updateEnd                := updateCmd.String("end-date", "E", &Options{Help: "New end date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    updateStatus             := updateCmd.String("status", "st", &Options{Help: "New status (pending, completed, cancelled, waiting)"}) // Unified flag
-    updateRecurrence         := updateCmd.String("recurrence", "r", &Options{Help: "New recurrence pattern"})
+    updateCmd := parser.NewCommand("update", "Update an existing task.")
+    updateIDs := updateCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of tasks to update (e.g., '1,2,3-5,10')"})
+    updateID := updateCmd.Int("id", "i", &Options{Help: "ID of a single task to update (use -ids for multiple or ranges)"})
+    updateTitle := updateCmd.String("title", "t", &Options{Help: "New title of the task"})
+    updateDesc := updateCmd.String("description", "d", &Options{Help: "New description of the task"})
+    updateProject := updateCmd.String("project", "p", &Options{Help: "New project name"})
+    updateStart := updateCmd.String("start-date", "s", &Options{Help: "New start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    updateDue := updateCmd.String("due-date", "D", &Options{Help: "New due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    updateEnd := updateCmd.String("end-date", "E", &Options{Help: "New end date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    updateStatus := updateCmd.String("status", "st", &Options{Help: "New status (pending, completed, cancelled, waiting)"}) // Unified flag
+    updateRecurrence := updateCmd.String("recurrence", "r", &Options{Help: "New recurrence pattern"})
     updateRecurrenceInterval := updateCmd.Int("recurrence-interval", "ri", &Options{Help: "New interval for recurrence"})
-    updateContexts           := updateCmd.StringList("contexts", "c", &Options{Help: "Comma-separated list of contexts (replaces existing)"})
-    updateTags               := updateCmd.StringList("tags", "T", &Options{Help: "Comma-separated list of tags (replaces existing)"})
-    updateStartWaiting       := updateCmd.String("start-waiting", "sw", &Options{Help: "New start date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    updateEndWaiting         := updateCmd.String("end-waiting", "ew", &Options{Help: "New end date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    updateContexts := updateCmd.StringList("contexts", "c", &Options{Help: "Comma-separated list of contexts (replaces existing)"})
+    updateTags := updateCmd.StringList("tags", "T", &Options{Help: "Comma-separated list of tags (replaces existing)"})
+    updateStartWaiting := updateCmd.String("start-waiting", "sw", &Options{Help: "New start date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    updateEndWaiting := updateCmd.String("end-waiting", "ew", &Options{Help: "New end date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
 
     // Clear flags for update command
-    updateClearProject    := updateCmd.Flag("clear-p", "", &Options{Help: "Clear project association"})
-    updateClearContexts   := updateCmd.Flag("clear-c", "", &Options{Help: "Clear all context associations"})
-    updateClearTags       := updateCmd.Flag("clear-T", "", &Options{Help: "Clear all tag associations"})
-    updateClearStart      := updateCmd.Flag("clear-s", "", &Options{Help: "Clear start date"})
-    updateClearDue        := updateCmd.Flag("clear-D", "", &Options{Help: "Clear due date"})
-    updateClearEnd        := updateCmd.Flag("clear-E", "", &Options{Help: "Clear end date"})
+    updateClearProject := updateCmd.Flag("clear-p", "", &Options{Help: "Clear project association"})
+    updateClearContexts := updateCmd.Flag("clear-c", "", &Options{Help: "Clear all context associations"})
+    updateClearTags := updateCmd.Flag("clear-T", "", &Options{Help: "Clear all tag associations"})
+    updateClearStart := updateCmd.Flag("clear-s", "", &Options{Help: "Clear start date"})
+    updateClearDue := updateCmd.Flag("clear-D", "", &Options{Help: "Clear due date"})
+    updateClearEnd := updateCmd.Flag("clear-E", "", &Options{Help: "Clear end date"})
     updateClearRecurrence := updateCmd.Flag("clear-r", "", &Options{Help: "Clear recurrence"})
-    updateClearWaiting    := updateCmd.Flag("clear-wait", "", &Options{Help: "Clear waiting period"})
+    updateClearWaiting := updateCmd.Flag("clear-wait", "", &Options{Help: "Clear waiting period"})
 
     // Add Note command
     addNoteCmd := parser.NewCommand("add-note", "Add a new note to a task.")
@@ -77,45 +77,55 @@ func main() {
     updateNoteDescription := updateNoteCmd.String("description", "d", &Options{Help: "New description for the note"})
     updateNoteTimestamp := updateNoteCmd.String("timestamp", "ts", &Options{Help: "New timestamp for the note (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
 
-
     // Delete Note command
     deleteNoteCmd := parser.NewCommand("delete-note", "Delete one or more notes by ID.")
-    deleteNoteIDs := deleteNoteCmd.String("ids", "", &Options{Required: true, Help: "Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10')"})
+    deleteNoteIDs := deleteNoteCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10')"})
+    deleteNoteAll := deleteNoteCmd.Flag("all", "", &Options{Help: "Delete all notes"})
+    // New flags for task-specific note deletion
+    deleteNoteTaskID := deleteNoteCmd.Int("task-id", "ti", &Options{Help: "ID of the task whose notes should be deleted"})
+    deleteNoteAllForTask := deleteNoteCmd.Flag("all-for-task", "", &Options{Help: "Delete all notes associated with the specified task ID"})
 
 
     // List command
-    listCmd         := parser.NewCommand("list", "List tasks.")
-    listProject     := listCmd.String("project", "p", &Options{Help: "Filter by project name"})
-    listContext     := listCmd.String("context", "c", &Options{Help: "Filter by context name"})
-    listTag         := listCmd.String("tag", "T", &Options{Help: "Filter by tag name"})
-    listStatus      := listCmd.String("status", "st", &Options{Default: "pending", Help: "Filter by status (pending, completed, cancelled, waiting, all)"})
+    listCmd := parser.NewCommand("list", "List tasks.")
+    listProject := listCmd.String("project", "p", &Options{Help: "Filter by project name"})
+    listContext := listCmd.String("context", "c", &Options{Help: "Filter by context name"})
+    listTag := listCmd.String("tag", "T", &Options{Help: "Filter by tag name"})
+    listStatus := listCmd.String("status", "st", &Options{Default: "pending", Help: "Filter by status (pending, completed, cancelled, waiting, all)"})
     listStartBefore := listCmd.String("start-before", "", &Options{Help: "Filter by start date before (YYYY-MM-DD HH:MM:SS)"})
-    listStartAfter  := listCmd.String("start-after", "", &Options{Help: "Filter by start date after (YYYY-MM-DD HH:MM:SS)"})
-    listDueBefore   := listCmd.String("due-before", "", &Options{Help: "Filter by due date before (YYYY-MM-DD HH:MM:SS)"})
-    listDueAfter    := listCmd.String("due-after", "", &Options{Help: "Filter by due date after (YYYY-MM-DD HH:MM:SS)"})
-    listSortBy      := listCmd.String("sort-by", "", &Options{Default: "due_date", Help: "Sort by field (id, title, start_date, due_date, status, project)"})
-    listOrder       := listCmd.String("order", "", &Options{Default: "asc", Help: "Sort order (asc, desc)"})
-    listFormat      := listCmd.Int("format", "f", &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal"})
-    listNotes       := listCmd.String("notes", "n", &Options{Default: "none", Help: "Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes)"})
-
+    listStartAfter := listCmd.String("start-after", "", &Options{Help: "Filter by start date after (YYYY-MM-DD HH:MM:SS)"})
+    listDueBefore := listCmd.String("due-before", "", &Options{Help: "Filter by due date before (YYYY-MM-DD HH:MM:SS)"})
+    listDueAfter := listCmd.String("due-after", "", &Options{Help: "Filter by due date after (YYYY-MM-DD HH:MM:SS)"})
+    listSortBy := listCmd.String("sort-by", "", &Options{Default: "due_date", Help: "Sort by field (id, title, start_date, due_date, status, project)"})
+    listOrder := listCmd.String("order", "", &Options{Default: "asc", Help: "Sort order (asc, desc)"})
+    listFormat := listCmd.Int("format", "f", &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal"})
+    listNotes := listCmd.String("notes", "n", &Options{Default: "none", Help: "Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes)"})
 
     // Holiday commands
-    holidayCmd     := parser.NewCommand("holiday", "Manage holidays.")
-    holidayAddCmd  := holidayCmd.NewCommand("add", "Add a new holiday.")
+    holidayCmd := parser.NewCommand("holiday", "Manage holidays.")
+    holidayAddCmd := holidayCmd.NewCommand("add", "Add a new holiday.")
     holidayAddDate := holidayAddCmd.String("date", "d", &Options{Required: true, Help: "Date of the holiday (YYYY-MM-DD)"})
     holidayAddName := holidayAddCmd.String("name", "n", &Options{Required: true, Help: "Name of the holiday"})
     holidayListCmd := holidayCmd.NewCommand("list", "List all holidays.")
+    holidayDelCmd := holidayCmd.NewCommand("del", "Delete one or more holidays by ID or delete all.") // Modified help text
+    holidayDelIDs := holidayDelCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of holidays to delete (e.g., '1,2,3-5,10')"})
+    holidayDelAll := holidayDelCmd.Flag("all", "", &Options{Help: "Delete all holidays"})
+
 
     // Working hours commands
-    workhoursCmd             := parser.NewCommand("workhours", "Manage working hours.")
-    workhoursSetCmd          := workhoursCmd.NewCommand("set", "Set working hours for a day of the week.")
-    workhoursSetDay          := workhoursSetCmd.Int("day", "d", &Options{Required: true, Help: "Day of week (0=Sunday, 1=Monday, ..., 6=Saturday)"})
-    workhoursSetStartHour    := workhoursSetCmd.Int("start-hour", "sh", &Options{Required: true, Help: "Start hour (0-23)"})
-    workhoursSetStartMinute  := workhoursSetCmd.Int("start-minute", "sM", &Options{Default: 0, Help: "Start minute (0-59)"})
-    workhoursSetEndHour      := workhoursSetCmd.Int("end-hour", "eh", &Options{Required: true, Help: "End hour (0-24)"})
-    workhoursSetEndMinute    := workhoursSetCmd.Int("end-minute", "eM", &Options{Default: 0, Help: "End minute (0-59)"})
+    workhoursCmd := parser.NewCommand("workhours", "Manage working hours.")
+    workhoursSetCmd := workhoursCmd.NewCommand("set", "Set working hours for a day of the week.")
+    workhoursSetDay := workhoursSetCmd.Int("day", "d", &Options{Required: true, Help: "Day of week (0=Sunday, 1=Monday, ..., 6=Saturday)"})
+    workhoursSetStartHour := workhoursSetCmd.Int("start-hour", "sh", &Options{Required: true, Help: "Start hour (0-23)"})
+    workhoursSetStartMinute := workhoursSetCmd.Int("start-minute", "sM", &Options{Default: 0, Help: "Start minute (0-59)"})
+    workhoursSetEndHour := workhoursSetCmd.Int("end-hour", "eh", &Options{Required: true, Help: "End hour (0-24)"})
+    workhoursSetEndMinute := workhoursSetCmd.Int("end-minute", "eM", &Options{Default: 0, Help: "End minute (0-59)"})
     workhoursSetBreakMinutes := workhoursSetCmd.Int("break-minutes", "b", &Options{Default: 0, Help: "Break duration in minutes for this day"})
-    workhoursListCmd         := workhoursCmd.NewCommand("list", "List all defined working hours.")
+    workhoursListCmd := workhoursCmd.NewCommand("list", "List all defined working hours.")
+    workhoursDelCmd := workhoursCmd.NewCommand("del", "Delete working hours for one or more days or delete all.") // Modified help text
+    workhoursDelDays := workhoursDelCmd.String("days", "", &Options{Help: "Comma-separated day of week numbers or ranges to delete working hours for (e.g., '1,2,3-5')"})
+    workhoursDelAll := workhoursDelCmd.Flag("all", "", &Options{Help: "Delete all working hours"})
+
 
     // List projects command
     listProjectsCmd := parser.NewCommand("projects", "List all projects.")
@@ -222,13 +232,24 @@ func main() {
         // Pass the directly provided note ID for update
         tm.UpdateNote(int64(*updateNoteID), *updateNoteDescription, *updateNoteTimestamp, updateNoteCmd.GetFlag("timestamp").IsSet)
     case deleteNoteCmd.Parsed:
-        noteIDsToDelete, parseErr := parseIDs(*deleteNoteIDs) // Use generic parseIDs for notes
-        if parseErr != nil {
-            fmt.Printf("Error parsing note IDs: %v\n", parseErr)
+        // Prioritize specific task notes deletion, then global all, then specific note IDs
+        if *deleteNoteTaskID != 0 && *deleteNoteAllForTask {
+            tm.DeleteAllNotesForTask(int64(*deleteNoteTaskID))
+        } else if *deleteNoteAll {
+            tm.DeleteAllNotes()
+        } else if *deleteNoteIDs != "" {
+            noteIDsToDelete, parseErr := parseIDs(*deleteNoteIDs) // Use generic parseIDs for notes
+            if parseErr != nil {
+                fmt.Printf("Error parsing note IDs: %v\n", parseErr)
+                fmt.Println(parser.Usage(nil))
+                os.Exit(1)
+            }
+            tm.DeleteNotes(noteIDsToDelete)
+        } else {
+            fmt.Println("At least one of --ids, --all, or (--task-id and --all-for-task) is required for 'delete-note' command.")
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
-        tm.DeleteNotes(noteIDsToDelete)
     case listCmd.Parsed:
         ListTasks(tm, *listProject, *listContext, *listTag, *listStatus,
             *listStartBefore, *listStartAfter, *listDueBefore, *listDueAfter,
@@ -238,10 +259,46 @@ func main() {
         tm.AddHoliday(*holidayAddDate, *holidayAddName)
     case holidayListCmd.Parsed:
         ListHolidays(tm)
+    case holidayDelCmd.Parsed: // New case for deleting holidays
+        if *holidayDelAll {
+            tm.DeleteAllHolidays()
+        } else if *holidayDelIDs != "" {
+            idsToDelete, parseErr := parseIDs(*holidayDelIDs)
+            if parseErr != nil {
+                fmt.Printf("Error parsing holiday IDs: %v\n", parseErr)
+                fmt.Println(parser.Usage(nil))
+                os.Exit(1)
+            }
+            tm.DeleteHolidays(idsToDelete)
+        } else {
+            fmt.Println("At least one of --ids or --all is required for 'holiday del' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
     case workhoursSetCmd.Parsed:
         tm.SetWorkingHours(*workhoursSetDay, *workhoursSetStartHour, *workhoursSetStartMinute, *workhoursSetEndHour, *workhoursSetEndMinute, *workhoursSetBreakMinutes)
     case workhoursListCmd.Parsed:
         ListWorkingHours(tm)
+    case workhoursDelCmd.Parsed: // New case for deleting working hours
+        if *workhoursDelAll {
+            tm.DeleteAllWorkingHours()
+        } else if *workhoursDelDays != "" {
+            daysToDelete, parseErr := parseIDs(*workhoursDelDays) // parseIDs works for int64, need to convert to int
+            if parseErr != nil {
+                fmt.Printf("Error parsing day IDs for working hours: %v\n", parseErr)
+                fmt.Println(parser.Usage(nil))
+                os.Exit(1)
+            }
+            var intDaysToDelete []int
+            for _, id := range daysToDelete {
+                intDaysToDelete = append(intDaysToDelete, int(id))
+            }
+            tm.DeleteWorkingHoursByDays(intDaysToDelete)
+        } else {
+            fmt.Println("At least one of --days or --all is required for 'workhours del' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
     case listProjectsCmd.Parsed:
         ListProjects(tm)
     case listContextsCmd.Parsed:
@@ -328,7 +385,7 @@ type Command struct {
     Flags    []*Flag
     Commands []*Command // Added to support subcommands
     Parsed   bool
-    parent   *Parser // Parent is a Parser for top-level commands
+    parent   *Parser    // Parent is a Parser for top-level commands
 }
 
 // NewCommand method for Command struct to create subcommands
