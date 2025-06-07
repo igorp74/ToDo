@@ -105,7 +105,11 @@ Usage: `todo [global options] <command> [command options]`
 
   `delete-note`   Delete one or more notes by ID.
   
-    --ids       Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10') (required)
+    --ids       Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10')
+    --all       Delete all notes
+    -ti, --task-id      ID of the task whose notes should be deleted
+    --all-for-task      Delete all notes associated with the specified task ID
+
 
   `list`  List tasks.
   
@@ -129,6 +133,9 @@ Usage: `todo [global options] <command> [command options]`
           -d, --date    Date of the holiday (YYYY-MM-DD) (required)
           -n, --name    Name of the holiday (required)
       holiday list      List all holidays.
+      holiday del       Delete one or more holidays by ID or delete all.
+          --ids Comma-separated IDs or ID ranges of holidays to delete (e.g., '1,2,3-5,10')
+          --all Delete all holidays
 
   `workhours`     Manage working hours.
   
@@ -141,6 +148,10 @@ Usage: `todo [global options] <command> [command options]`
           -eM, --end-minute     End minute (0-59) (default: 0)
           -b, --break-minutes   Break duration in minutes for this day (default: 0)
       workhours list    List all defined working hours.
+      workhours del     Delete working hours for one or more days or delete all.
+          --days        Comma-separated day of week numbers or ranges to delete working hours for (e.g., '1,2,3-5')
+          --all Delete all working hours
+
 
   `projects`      List all projects.
 
