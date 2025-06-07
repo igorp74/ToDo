@@ -10,18 +10,22 @@ Simple CLI app for task management with SQLite as a backend
 1. Create a folder for your Golang workspace (i.e. **ws_todo**)
 2. Create a folder for source data (i.e. **todo**)
 3. Copy files to **todo** folder
-4. Open shell in **ws_todo** folder and type
-    > go mod init todo/app
-    > 
-    > go mod tidy
-5. Enter todo folder and type
-    > go build
-6. Depends on environment, you will get the todo.exe on Windows or todo on Linux
-    > todo add -t "Test"   (on Windows)
-    > 
-    > ./todo add -t "Test" (on Linux)
-    > This last step will create **todo.db** in your home folder
-7. Save the executable/binary in folder that is on system path
+4. Open shell in **ws_todo** folder and type:
+   
+   `go mod init todo/app`
+     
+   `go mod tidy`
+6. Enter todo folder and type:
+
+   `go build`
+8. Depends on environment, you will get the todo.exe on Windows or todo on Linux
+
+   `todo add -t "Test"`   (on Windows)
+    
+   `./todo add -t "Test"` (on Linux)
+
+    This last step will create **todo.db** in your home folder
+10. Save the executable/binary in folder that is on system path
     * `sudo cp todo /usr/local/bin` (on Linux)
   
     * Or add your path to the environment variable (Windows)
@@ -29,7 +33,7 @@ Simple CLI app for task management with SQLite as a backend
     
 
 
-## 🛟 HELP
+## 🎒 HELP
 
 
 Usage: `todo [global options] <command> [command options]`
