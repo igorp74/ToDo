@@ -925,6 +925,11 @@ func (tm *TodoManager) DeleteAllHolidays() {
         log.Fatalf("Error checking rows affected for deleting all holidays: %v", err)
     }
     fmt.Printf("Deleted %d holidays.\n", rowsAffected)
+    // Reset the auto-increment sequence for holidays table
+    _, err = tm.db.Exec("UPDATE sqlite_sequence SET seq = 0 WHERE name = 'holidays'")
+    if err != nil {
+        log.Printf("Warning: Could not reset sqlite_sequence for 'holidays': %v", err)
+    }
 }
 
 // SetWorkingHours sets working hours for a specific day of the week, including minutes and break.
@@ -1045,6 +1050,11 @@ func (tm *TodoManager) DeleteAllWorkingHours() {
         log.Fatalf("Error checking rows affected for deleting all working hours: %v", err)
     }
     fmt.Printf("Deleted %d working hour entries.\n", rowsAffected)
+    // Reset the auto-increment sequence for working_hours table
+    _, err = tm.db.Exec("UPDATE sqlite_sequence SET seq = 0 WHERE name = 'working_hours'")
+    if err != nil {
+        log.Printf("Warning: Could not reset sqlite_sequence for 'working_hours': %v", err)
+    }
 }
 
 
@@ -1252,6 +1262,11 @@ func (tm *TodoManager) DeleteAllNotes() {
         log.Fatalf("Error checking rows affected for deleting all notes: %v", err)
     }
     fmt.Printf("Deleted %d notes.\n", rowsAffected)
+    // Reset the auto-increment sequence for task_notes table
+    _, err = tm.db.Exec("UPDATE sqlite_sequence SET seq = 0 WHERE name = 'task_notes'")
+    if err != nil {
+        log.Printf("Warning: Could not reset sqlite_sequence for 'task_notes': %v", err)
+    }
 }
 
 // DeleteAllNotesForTask deletes all notes associated with a specific task ID.
@@ -1266,3 +1281,4 @@ func (tm *TodoManager) DeleteAllNotesForTask(taskID int64) {
     }
     fmt.Printf("Deleted %d notes for task %d.\n", rowsAffected, taskID)
 }
+
