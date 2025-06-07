@@ -1,7 +1,7 @@
 # ToDo
 Simple CLI app for task management with SQLite as a backend
 
-## BUILD:
+## ⚙️ BUILD:
 
 ### Prerequisites:
 1. Installed GO
@@ -29,17 +29,17 @@ Simple CLI app for task management with SQLite as a backend
     
 
 
-## HELP
+## 🛟 HELP
 
 
-Usage: todo [global options] <command> [command options]
+Usage: `todo [global options] <command> [command options]`
   A simple CLI todo application.
 
 **Global Options**:
 
   `--db-path`     Custom path and name for the database file (e.g., /path/to/my/todo.db)
 
-## Commands:
+**Commands:**
 
   `add`  Add a new todo task.
   
@@ -145,7 +145,7 @@ Usage: todo [global options] <command> [command options]
   `tags`  List all tags.
 
 
-# Examples
+# 📽️ Examples
 This example shows very basic task creations and then updating projects over task range.
 
 
