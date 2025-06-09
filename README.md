@@ -52,6 +52,7 @@ Usage: `todo [global options] <command> [command options]`
     -p, --project       Project name (will be created if not exists)
     -s, --start-date    Start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
     -D, --due-date      Due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
+    -E, --end-date      End date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
     -r, --recurrence    Recurrence pattern (daily, weekly, monthly, yearly)
     -ri, --recurrence-interval  Interval for recurrence (e.g., 2 for every 2 days) (default: 1)
     -c, --contexts      Comma-separated list of contexts (e.g., 'work,home')
@@ -59,6 +60,7 @@ Usage: `todo [global options] <command> [command options]`
     -sw, --start-waiting        Start date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
     -ew, --end-waiting  End date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
     -st, --status       Initial status of the task (pending, completed, cancelled, waiting) (default: pending)
+
 
   `del`   Delete a task by ID.
   
@@ -83,6 +85,10 @@ Usage: `todo [global options] <command> [command options]`
     -T, --tags  Comma-separated list of tags (replaces existing)
     -sw, --start-waiting        New start date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
     -ew, --end-waiting  New end date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
+    -ac, --add-contexts Comma-separated list of contexts to add (e.g., 'new_work,urgent_call'). Will append to existing.
+    -rc, --remove-contexts      Comma-separated list of contexts to remove (e.g., 'old_context'). Will remove from existing.
+    -at, --add-tags     Comma-separated list of tags to add (e.g., 'new_feature,high_priority'). Will append to existing.
+    -rt, --remove-tags  Comma-separated list of tags to remove (e.g., 'bug_fix'). Will remove from existing.
     --clear-p   Clear project association
     --clear-c   Clear all context associations
     --clear-T   Clear all tag associations
@@ -92,10 +98,13 @@ Usage: `todo [global options] <command> [command options]`
     --clear-r   Clear recurrence
     --clear-wait        Clear waiting period
 
+
   `add-note`      Add a new note to a task.
   
     -i, --task-id       ID of the task to add a note to (required)
     -d, --description   Description of the note (required)
+    -ts, --timestamp    Timestamp for the note (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
+
 
   `update-note`   Update an existing note by its permanent database ID.
   
