@@ -22,8 +22,8 @@ func ParseDateTime(dateTimeStr string, loc *time.Location) (NullableTime, error)
     }
 
     layouts := []string{
-        "2006-01-02 15:04:05", // 0000-MM-DD HH:MM:SS
-        "2006-01-02",          // 0000-MM-DD
+        "2006-01-02 15:04:05", // YYYY-MM-DD HH:MM:SS
+        "2006-01-02",          // YYYY-MM-DD
         "01-02-2006",          // MM-DD-YYYY
         "02-01-2006",          // DD-MM-YYYY
     }
@@ -110,7 +110,7 @@ func FormatWorkingHoursDisplay(d time.Duration) string { // Renamed to FormatWor
     return strings.Join(parts, " ") // Join with space for shorter output
 }
 
-// FormatDisplayDateTime formats a NullableTime into the desired "Day YYYY-MM-DD HH:MM:SS" format.
+// FormatDisplayDateTime formats a NullableTime into the desired "Day Mon-DD-YYYY HH:MM:SS" format.
 // It converts the stored UTC time to the local timezone for display.
 // Returns "N/A" if the NullableTime is not valid.
 func FormatDisplayDateTime(nt NullableTime) string { // Changed to accept NullableTime

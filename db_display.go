@@ -605,3 +605,4 @@ func ListTags(tm *TodoManager) {
         log.Fatalf("Error after listing tags: %v", err)
     }
 }
+

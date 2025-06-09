@@ -246,6 +246,11 @@ func (tm *TodoManager) associateTaskWithNames(tx *sql.Tx, taskID int64, nameIDs 
         insertQuery := fmt.Sprintf("INSERT INTO %s (task_id, %s) VALUES (?, ?)", joinTable, foreignKey)
         _, err := tx.Exec(insertQuery, taskID, nameID) // Use tx for exec
         if err != nil {
+            // Check if the error is due to a unique constraint violation (duplicate entry)
+            if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+                log.Printf("Warning: Duplicate entry for task %d and ID %d in %s, skipping.", taskID, nameID, joinTable)
+                continue // Skip this specific duplicate and continue with others
+            }
             return fmt.Errorf("failed to associate task %d with ID %d in %s: %w", taskID, nameID, joinTable, err)
         }
     }
@@ -256,7 +261,7 @@ func (tm *TodoManager) associateTaskWithNames(tx *sql.Tx, taskID int64, nameIDs 
 // AddTask adds a new task to the database.
 // It now accepts an optional *sql.Tx to allow participation in an existing transaction.
 func (tm *TodoManager) AddTask(tx *sql.Tx, title, description, project string, startDateStr string, isStartDateSet bool, dueDateStr string, isDueDateSet bool,
-    recurrence string, recurrenceInterval int, contexts, tags []string, startWaitingStr string, isStartWaitingSet bool, endWaitingStr string, isEndWaitingSet bool, status string, originalTaskID sql.NullInt64) { // Added originalTaskID
+    endDateStr string, isEndDateSet bool, recurrence string, recurrenceInterval int, contexts, tags []string, startWaitingStr string, isStartWaitingSet bool, endWaitingStr string, isEndWaitingSet bool, status string, originalTaskID sql.NullInt64) { // Added originalTaskID
 
     // If no transaction is provided, start a new one.
     shouldCommit := false
@@ -286,7 +291,7 @@ func (tm *TodoManager) AddTask(tx *sql.Tx, title, description, project string, s
         projectID = sql.NullInt64{Int64: id, Valid: true}
     }
 
-    var startDate, dueDate, startWaitingDate, endWaitingDate NullableTime
+    var startDate, dueDate, endDate, startWaitingDate, endWaitingDate NullableTime // Added endDate
 
     // Handle start date
     if isStartDateSet {
@@ -316,6 +321,24 @@ func (tm *TodoManager) AddTask(tx *sql.Tx, title, description, project string, s
             dueDate = parsed
         }
     }
+
+    // Handle end date (completion date)
+    if isEndDateSet { // Only update if the flag was explicitly provided
+        if endDateStr == "" {
+            endDate = NullableTime{Time: time.Now().UTC(), Valid: true} // Default to current UTC time
+        } else {
+            parsed, err := ParseDateTime(endDateStr, time.Local) // Parse input as local, then convert to UTC
+            if err != nil {
+                log.Fatalf("Invalid end date format: %v", err)
+            }
+            endDate = parsed
+        }
+        // If end_date is set, and status is not explicitly provided, set status to 'completed'
+        if status == "pending" { // Only change if still default pending status
+            status = "completed"
+        }
+    }
+
 
     // Handle start waiting date
     if isStartWaitingSet {
@@ -354,12 +377,13 @@ func (tm *TodoManager) AddTask(tx *sql.Tx, title, description, project string, s
     // NullableTime.Value() already returns time in its stored location (UTC in this case)
     sqlStartDate, _ := startDate.Value()
     sqlDueDate, _ := dueDate.Value()
+    sqlEndDate, _ := endDate.Value() // Get sql.NullTime for end date
     sqlStartWaitingDate, _ := startWaitingDate.Value()
     sqlEndWaitingDate, _ := endWaitingDate.Value()
 
     insertQuery := `
-        INSERT INTO tasks (title, description, project_id, start_date, due_date, recurrence, recurrence_interval, status, start_waiting_date, end_waiting_date, original_task_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO tasks (title, description, project_id, start_date, due_date, end_date, recurrence, recurrence_interval, status, start_waiting_date, end_waiting_date, original_task_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     res, err := tx.Exec(insertQuery,
         title,
@@ -367,6 +391,7 @@ func (tm *TodoManager) AddTask(tx *sql.Tx, title, description, project string, s
         projectID,
         sqlStartDate,
         sqlDueDate,
+        sqlEndDate, // Include end date in the insert
         sql.NullString{String: recurrence, Valid: recurrence != ""},
         sql.NullInt64{Int64: int64(recurrenceInterval), Valid: recurrenceInterval != 0},
         finalStatus,
@@ -446,8 +471,9 @@ func (tm *TodoManager) DeleteTasks(ids []int64, completeInstead bool) {
 
 // UpdateTasks updates one or more tasks.
 func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, startDateStr string, isStartDateSet bool, dueDateStr string, isDueDateSet bool,
-    endDateStr string, isEndDateSet bool, status string, recurrence string, recurrenceInterval int, contexts, tags []string, startWaitingStr string, isStartWaitingSet bool, endWaitingStr string, isEndWaitingSet bool,
-    clearProject, clearContexts, clearTags, clearStart, clearDue, clearEnd, clearRecurrence, clearWaiting bool) error {
+    endDateStr string, isEndDateSet bool, status string, recurrence string, recurrenceInterval int, contexts []string, isContextsSet bool, tags []string, isTagsSet bool, startWaitingStr string, isStartWaitingSet bool, endWaitingStr string, isEndWaitingSet bool,
+    clearProject, clearContexts, clearTags, clearStart, clearDue, clearEnd, clearRecurrence, clearWaiting bool,
+    addContexts []string, isAddContextsSet bool, removeContexts []string, isRemoveContextsSet bool, addTags []string, isAddTagsSet bool, removeTags []string, isRemoveTagsSet bool) error { // Added new incremental flags
 
     if len(ids) == 0 {
         return fmt.Errorf("no task IDs provided for update")
@@ -657,7 +683,7 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
             }
         }
 
-        if len(updates) == 0 && len(contexts) == 0 && len(tags) == 0 && !clearContexts && !clearTags {
+        if len(updates) == 0 && !isContextsSet && !isTagsSet && !clearContexts && !clearTags && !isAddContextsSet && !isRemoveContextsSet && !isAddTagsSet && !isRemoveTagsSet {
             fmt.Printf("No update parameters provided for task ID %d.\n", id)
             continue
         }
@@ -672,37 +698,132 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
             }
         }
 
-        // Update contexts
-        if len(contexts) > 0 || clearContexts {
+        // Handle contexts updates
+        if clearContexts {
+            // Clear all existing contexts
+            if err := tm.associateTaskWithNames(tx, id, []int64{}, "task_contexts", "context_id"); err != nil {
+                return fmt.Errorf("error clearing contexts for task %d: %w", id, err)
+            }
+        } else if isContextsSet {
+            // Replace all contexts with the provided list
             contextIDs := []int64{}
-            if !clearContexts { // Only get IDs if not clearing
-                for _, c := range contexts {
-                    cID, err := tm.getID(tx, "contexts", c) // Pass tx
-                    if err != nil {
-                        return fmt.Errorf("error getting context ID for task %d: %w", id, err)
-                    }
-                    contextIDs = append(contextIDs, cID)
+            for _, c := range contexts {
+                cID, err := tm.getID(tx, "contexts", c)
+                if err != nil {
+                    return fmt.Errorf("error getting context ID for task %d: %w", id, err)
+                }
+                contextIDs = append(contextIDs, cID)
+            }
+            if err := tm.associateTaskWithNames(tx, id, contextIDs, "task_contexts", "context_id"); err != nil {
+                return fmt.Errorf("error associating contexts for task %d: %w", id, err)
+            }
+        } else {
+            // Incremental updates for contexts
+            currentContextNames := tm.GetTaskNames(id, "task_contexts", "contexts")
+            updatedContextNames := make(map[string]bool)
+            for _, c := range currentContextNames {
+                updatedContextNames[c] = true
+            }
+
+            if isAddContextsSet {
+                for _, c := range addContexts {
+                    updatedContextNames[c] = true
                 }
             }
-            if err := tm.associateTaskWithNames(tx, id, contextIDs, "task_contexts", "context_id"); err != nil { // Pass tx
-                return fmt.Errorf("error associating contexts for task %d: %w", id, err)
+            if isRemoveContextsSet {
+                for _, c := range removeContexts {
+                    delete(updatedContextNames, c)
+                }
+            }
+
+            // Convert map keys back to slice of names
+            finalContextNames := []string{}
+            for name := range updatedContextNames {
+                finalContextNames = append(finalContextNames, name)
+            }
+            // Convert names to IDs for association
+            finalContextIDs := []int64{}
+            for _, cName := range finalContextNames {
+                cID, err := tm.getID(tx, "contexts", cName)
+                if err != nil {
+                    return fmt.Errorf("error getting context ID for task %d: %w", id, err)
+                }
+                finalContextIDs = append(finalContextIDs, cID)
+            }
+            if (isAddContextsSet || isRemoveContextsSet) && len(finalContextIDs) > 0 {
+                if err := tm.associateTaskWithNames(tx, id, finalContextIDs, "task_contexts", "context_id"); err != nil {
+                    return fmt.Errorf("error associating contexts for task %d: %w", id, err)
+                }
+            } else if (isAddContextsSet || isRemoveContextsSet) && len(finalContextIDs) == 0 && len(currentContextNames) > 0 {
+                // If all contexts were removed incrementally, ensure the association is cleared
+                if err := tm.associateTaskWithNames(tx, id, []int64{}, "task_contexts", "context_id"); err != nil {
+                    return fmt.Errorf("error clearing all contexts incrementally for task %d: %w", id, err)
+                }
             }
         }
 
-        // Update tags
-        if len(tags) > 0 || clearTags {
+
+        // Handle tags updates
+        if clearTags {
+            // Clear all existing tags
+            if err := tm.associateTaskWithNames(tx, id, []int64{}, "task_tags", "tag_id"); err != nil {
+                return fmt.Errorf("error clearing tags for task %d: %w", id, err)
+            }
+        } else if isTagsSet {
+            // Replace all tags with the provided list
             tagIDs := []int64{}
-            if !clearTags { // Only get IDs if not clearing
-                for _, t := range tags {
-                    tID, err := tm.getID(tx, "tags", t) // Pass tx
-                    if err != nil {
-                        return fmt.Errorf("error getting tag ID for task %d: %w", id, err)
-                    }
-                    tagIDs = append(tagIDs, tID)
+            for _, t := range tags {
+                tID, err := tm.getID(tx, "tags", t)
+                if err != nil {
+                    return fmt.Errorf("error getting tag ID for task %d: %w", id, err)
+                }
+                tagIDs = append(tagIDs, tID)
+            }
+            if err := tm.associateTaskWithNames(tx, id, tagIDs, "task_tags", "tag_id"); err != nil {
+                return fmt.Errorf("error associating tags for task %d: %w", id, err)
+            }
+        } else {
+            // Incremental updates for tags
+            currentTagNames := tm.GetTaskNames(id, "task_tags", "tags")
+            updatedTagNames := make(map[string]bool)
+            for _, t := range currentTagNames {
+                updatedTagNames[t] = true
+            }
+
+            if isAddTagsSet {
+                for _, t := range addTags {
+                    updatedTagNames[t] = true
                 }
             }
-            if err := tm.associateTaskWithNames(tx, id, tagIDs, "task_tags", "tag_id"); err != nil { // Pass tx
-                return fmt.Errorf("error associating tags for task %d: %w", id, err)
+            if isRemoveTagsSet {
+                for _, t := range removeTags {
+                    delete(updatedTagNames, t)
+                }
+            }
+
+            // Convert map keys back to slice of names
+            finalTagNames := []string{}
+            for name := range updatedTagNames {
+                finalTagNames = append(finalTagNames, name)
+            }
+            // Convert names to IDs for association
+            finalTagIDs := []int64{}
+            for _, tName := range finalTagNames {
+                tID, err := tm.getID(tx, "tags", tName)
+                if err != nil {
+                    return fmt.Errorf("error getting tag ID for task %d: %w", id, err)
+                }
+                finalTagIDs = append(finalTagIDs, tID)
+            }
+            if (isAddTagsSet || isRemoveTagsSet) && len(finalTagIDs) > 0 {
+                if err := tm.associateTaskWithNames(tx, id, finalTagIDs, "task_tags", "tag_id"); err != nil {
+                    return fmt.Errorf("error associating tags for task %d: %w", id, err)
+                }
+            } else if (isAddTagsSet || isRemoveTagsSet) && len(finalTagIDs) == 0 && len(currentTagNames) > 0 {
+                // If all tags were removed incrementally, ensure the association is cleared
+                if err := tm.associateTaskWithNames(tx, id, []int64{}, "task_tags", "tag_id"); err != nil {
+                    return fmt.Errorf("error clearing all tags incrementally for task %d: %w", id, err)
+                }
             }
         }
         fmt.Printf("Task %d updated successfully.\n", id)
@@ -713,6 +834,7 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
             // Convert stored UTC times to local for recurrence calculation logic
             nextStartDate := currentTask.StartDate.Time.Local()
             nextDueDate := currentTask.DueDate.Time.Local()
+            nextEndDate := currentTask.EndDate.Time.Local() // Also get next end date
 
             // Initialize next waiting dates to nil, and set only if original had them
             var nextStartWaitingDate time.Time
@@ -740,6 +862,9 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                 if currentTask.DueDate.Valid {
                     nextDueDate = nextDueDate.AddDate(0, 0, int(interval))
                 }
+                if currentTask.EndDate.Valid { // Add for EndDate
+                    nextEndDate = nextEndDate.AddDate(0, 0, int(interval))
+                }
                 if isNextStartWaitingSet {
                     nextStartWaitingDate = nextStartWaitingDate.AddDate(0, 0, int(interval))
                 }
@@ -750,6 +875,9 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                 nextStartDate = nextStartDate.AddDate(0, 0, int(interval)*7)
                 if currentTask.DueDate.Valid {
                     nextDueDate = nextDueDate.AddDate(0, 0, int(interval)*7)
+                }
+                if currentTask.EndDate.Valid { // Add for EndDate
+                    nextEndDate = nextEndDate.AddDate(0, 0, int(interval)*7)
                 }
                 if isNextStartWaitingSet {
                     nextStartWaitingDate = nextStartWaitingDate.AddDate(0, 0, int(interval)*7)
@@ -762,6 +890,9 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                 if currentTask.DueDate.Valid {
                     nextDueDate = nextDueDate.AddDate(0, int(interval), 0)
                 }
+                if currentTask.EndDate.Valid { // Add for EndDate
+                    nextEndDate = nextEndDate.AddDate(0, int(interval), 0)
+                }
                 if isNextStartWaitingSet {
                     nextStartWaitingDate = nextStartWaitingDate.AddDate(0, int(interval), 0)
                 }
@@ -772,6 +903,9 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                 nextStartDate = nextStartDate.AddDate(int(interval), 0, 0)
                 if currentTask.DueDate.Valid {
                     nextDueDate = nextDueDate.AddDate(int(interval), 0, 0)
+                }
+                if currentTask.EndDate.Valid { // Add for EndDate
+                    nextEndDate = nextEndDate.AddDate(int(interval), 0, 0)
                 }
                 if isNextStartWaitingSet {
                     nextStartWaitingDate = nextStartWaitingDate.AddDate(int(interval), 0, 0)
@@ -811,6 +945,8 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                 true, // isStartDateSet (force setting the new start date)
                 nextDueDate.Format("2006-01-02 15:04:05"),
                 currentTask.DueDate.Valid, // isDueDateSet (only set if original had a due date)
+                nextEndDate.Format("2006-01-02 15:04:05"), // Pass next end date
+                currentTask.EndDate.Valid, // isEndDateSet (only set if original had an end date)
                 currentTask.Recurrence.String,
                 int(currentTask.RecurrenceInterval.Int64),
                 currentContexts,
@@ -1113,13 +1249,30 @@ func (tm *TodoManager) CalculateWorkingDuration(start, end NullableTime, working
 }
 
 // AddNoteToTask adds a new note to a specific task.
-func (tm *TodoManager) AddNoteToTask(taskID int64, description string) {
+func (tm *TodoManager) AddNoteToTask(taskID int64, description string, timestampStr string, isTimestampSet bool) { // Added timestamp parameters
     insertQuery := `
         INSERT INTO task_notes (task_id, timestamp, description)
         VALUES (?, ?, ?)
     `
-    // Store note timestamp in UTC
-    _, err := tm.db.Exec(insertQuery, taskID, time.Now().UTC(), description)
+    var noteTimestamp NullableTime
+    if isTimestampSet {
+        if timestampStr == "" {
+            noteTimestamp = NullableTime{Time: time.Now().UTC(), Valid: true} // Default to current UTC time if flag is present but value is empty
+        } else {
+            parsed, err := ParseDateTime(timestampStr, time.Local) // Parse input as local, then convert to UTC
+            if err != nil {
+                log.Fatalf("Invalid timestamp format for note: %v", err)
+            }
+            noteTimestamp = parsed
+        }
+    } else {
+        // If not explicitly set, default to current UTC time
+        noteTimestamp = NullableTime{Time: time.Now().UTC(), Valid: true}
+    }
+
+    sqlNoteTimestamp, _ := noteTimestamp.Value()
+
+    _, err := tm.db.Exec(insertQuery, taskID, sqlNoteTimestamp, description)
     if err != nil {
         log.Fatalf("Error adding note to task %d: %v", taskID, err)
     }

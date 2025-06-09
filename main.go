@@ -24,6 +24,7 @@ func main() {
     addProject := addCmd.String("project", "p", &Options{Help: "Project name (will be created if not exists)"})
     addStart := addCmd.String("start-date", "s", &Options{Help: "Start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     addDue := addCmd.String("due-date", "D", &Options{Help: "Due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    addEnd := addCmd.String("end-date", "E", &Options{Help: "End date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."}) // Added
     addRecurrence := addCmd.String("recurrence", "r", &Options{Help: "Recurrence pattern (daily, weekly, monthly, yearly)"})
     addRecurrenceInterval := addCmd.Int("recurrence-interval", "ri", &Options{Default: 1, Help: "Interval for recurrence (e.g., 2 for every 2 days)"})
     addContexts := addCmd.StringList("contexts", "c", &Options{Help: "Comma-separated list of contexts (e.g., 'work,home')"})
@@ -56,6 +57,12 @@ func main() {
     updateStartWaiting := updateCmd.String("start-waiting", "sw", &Options{Help: "New start date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     updateEndWaiting := updateCmd.String("end-waiting", "ew", &Options{Help: "New end date of waiting period (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
 
+    // New flags for incremental context/tag modification
+    updateAddContexts := updateCmd.StringList("add-contexts", "ac", &Options{Help: "Comma-separated list of contexts to add (e.g., 'new_work,urgent_call'). Will append to existing."})
+    updateRemoveContexts := updateCmd.StringList("remove-contexts", "rc", &Options{Help: "Comma-separated list of contexts to remove (e.g., 'old_context'). Will remove from existing."})
+    updateAddTags := updateCmd.StringList("add-tags", "at", &Options{Help: "Comma-separated list of tags to add (e.g., 'new_feature,high_priority'). Will append to existing."})
+    updateRemoveTags := updateCmd.StringList("remove-tags", "rt", &Options{Help: "Comma-separated list of tags to remove (e.g., 'bug_fix'). Will remove from existing."})
+
     // Clear flags for update command
     updateClearProject := updateCmd.Flag("clear-p", "", &Options{Help: "Clear project association"})
     updateClearContexts := updateCmd.Flag("clear-c", "", &Options{Help: "Clear all context associations"})
@@ -70,6 +77,7 @@ func main() {
     addNoteCmd := parser.NewCommand("add-note", "Add a new note to a task.")
     addNoteTaskID := addNoteCmd.Int("task-id", "i", &Options{Required: true, Help: "ID of the task to add a note to"})
     addNoteDescription := addNoteCmd.String("description", "d", &Options{Required: true, Help: "Description of the note"})
+    addNoteTimestamp := addNoteCmd.String("timestamp", "ts", &Options{Help: "Timestamp for the note (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."}) // Added
 
     // Update Note command - MODIFIED TO USE ACTUAL NOTE ID
     updateNoteCmd := parser.NewCommand("update-note", "Update an existing note by its permanent database ID.")
@@ -157,6 +165,8 @@ func main() {
             addCmd.GetFlag("start-date").IsSet, // Pass IsSet status for start-date
             *addDue,
             addCmd.GetFlag("due-date").IsSet, // Pass IsSet status for due-date
+            *addEnd, // Pass the new end date string
+            addCmd.GetFlag("end-date").IsSet, // Pass IsSet status for end-date
             *addRecurrence,
             *addRecurrenceInterval,
             *addContexts,
@@ -212,16 +222,23 @@ func main() {
             *updateEnd, updateCmd.GetFlag("end-date").IsSet,
             *updateStatus,
             *updateRecurrence, *updateRecurrenceInterval,
-            *updateContexts, *updateTags,
+            *updateContexts, updateCmd.GetFlag("contexts").IsSet, // Pass IsSet for replace
+            *updateTags, updateCmd.GetFlag("tags").IsSet, // Pass IsSet for replace
             *updateStartWaiting, updateCmd.GetFlag("start-waiting").IsSet,
             *updateEndWaiting, updateCmd.GetFlag("end-waiting").IsSet,
             *updateClearProject, *updateClearContexts, *updateClearTags,
-            *updateClearStart, *updateClearDue, *updateClearEnd, *updateClearRecurrence, *updateClearWaiting)
+            *updateClearStart, *updateClearDue, *updateClearEnd, *updateClearRecurrence, *updateClearWaiting,
+            // Pass new incremental update flags
+            *updateAddContexts, updateCmd.GetFlag("add-contexts").IsSet,
+            *updateRemoveContexts, updateCmd.GetFlag("remove-contexts").IsSet,
+            *updateAddTags, updateCmd.GetFlag("add-tags").IsSet,
+            *updateRemoveTags, updateCmd.GetFlag("remove-tags").IsSet,
+        )
         if err != nil {
             log.Fatalf("Error updating tasks: %v", err)
         }
     case addNoteCmd.Parsed:
-        tm.AddNoteToTask(int64(*addNoteTaskID), *addNoteDescription)
+        tm.AddNoteToTask(int64(*addNoteTaskID), *addNoteDescription, *addNoteTimestamp, addNoteCmd.GetFlag("timestamp").IsSet) // Pass timestamp and IsSet
     case updateNoteCmd.Parsed:
         // Check if at least one of description or timestamp is provided
         if *updateNoteDescription == "" && !updateNoteCmd.GetFlag("timestamp").IsSet {
@@ -725,3 +742,4 @@ func (p *Parser) Usage(err error) string {
     }
     return sb.String()
 }
+
