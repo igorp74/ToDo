@@ -130,10 +130,13 @@ Usage: `todo [global options] <command> [command options]`
     --start-after       Filter by start date after (YYYY-MM-DD HH:MM:SS)
     --due-before        Filter by due date before (YYYY-MM-DD HH:MM:SS)
     --due-after Filter by due date after (YYYY-MM-DD HH:MM:SS)
-    --sort-by   Sort by field (id, title, start_date, due_date, status, project) (default: due_date)
+    --end-before        Filter by end date before (YYYY-MM-DD HH:MM:SS)
+    --end-after Filter by end date after (YYYY-MM-DD HH:MM:SS)
+    --sort-by   Sort by field (id, title, start_date, due_date, status, project, end_date) (default: due_date)
     --order     Sort order (asc, desc) (default: asc)
     -f, --format        Output format: 0=Full, 1=Condensed, 2=Minimal (default: 0)
     -n, --notes Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes) (default: none)
+
 
   `holiday`       Manage holidays.
   
