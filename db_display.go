@@ -41,7 +41,8 @@ const (
 )
 
 // ListTasks fetches and displays tasks based on filters and sorting.
-func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusFilter, startBefore, startAfter, dueBefore, dueAfter, sortBy, order string, format int, displayNotes string) {
+// Added endBefore and endAfter parameters for filtering by end date.
+func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusFilter, startBefore, startAfter, dueBefore, dueAfter, endBefore, endAfter, sortBy, order string, format int, displayNotes string) {
     query := `
         SELECT
             t.id, t.title, t.description, p.name, t.start_date, t.due_date, t.end_date, t.status,
@@ -99,6 +100,27 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             log.Printf("Warning: Invalid due-after date format: %v", err)
         } else {
             whereClauses = append(whereClauses, "t.due_date >= ?")
+            sqlParsed, _ := parsed.Value() // Get sql.NullTime (already UTC)
+            args = append(args, sqlParsed)
+        }
+    }
+    // New: End Date filters
+    if endBefore != "" {
+        parsed, err := ParseDateTime(endBefore, time.Local)
+        if err != nil {
+            log.Printf("Warning: Invalid end-before date format: %v", err)
+        } else {
+            whereClauses = append(whereClauses, "t.end_date <= ?")
+            sqlParsed, _ := parsed.Value() // Get sql.NullTime (already UTC)
+            args = append(args, sqlParsed)
+        }
+    }
+    if endAfter != "" {
+        parsed, err := ParseDateTime(endAfter, time.Local)
+        if err != nil {
+            log.Printf("Warning: Invalid end-after date format: %v", err)
+        } else {
+            whereClauses = append(whereClauses, "t.end_date >= ?")
             sqlParsed, _ := parsed.Value() // Get sql.NullTime (already UTC)
             args = append(args, sqlParsed)
         }

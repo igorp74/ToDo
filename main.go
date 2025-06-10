@@ -104,7 +104,9 @@ func main() {
     listStartAfter := listCmd.String("start-after", "", &Options{Help: "Filter by start date after (YYYY-MM-DD HH:MM:SS)"})
     listDueBefore := listCmd.String("due-before", "", &Options{Help: "Filter by due date before (YYYY-MM-DD HH:MM:SS)"})
     listDueAfter := listCmd.String("due-after", "", &Options{Help: "Filter by due date after (YYYY-MM-DD HH:MM:SS)"})
-    listSortBy := listCmd.String("sort-by", "", &Options{Default: "due_date", Help: "Sort by field (id, title, start_date, due_date, status, project)"})
+    listEndBefore := listCmd.String("end-before", "", &Options{Help: "Filter by end date before (YYYY-MM-DD HH:MM:SS)"}) // Added new flag
+    listEndAfter := listCmd.String("end-after", "", &Options{Help: "Filter by end date after (YYYY-MM-DD HH:MM:SS)"})   // Added new flag
+    listSortBy := listCmd.String("sort-by", "", &Options{Default: "due_date", Help: "Sort by field (id, title, start_date, due_date, status, project, end_date)"}) // Updated help
     listOrder := listCmd.String("order", "", &Options{Default: "asc", Help: "Sort order (asc, desc)"})
     listFormat := listCmd.Int("format", "f", &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal"})
     listNotes := listCmd.String("notes", "n", &Options{Default: "none", Help: "Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes)"})
@@ -270,6 +272,7 @@ func main() {
     case listCmd.Parsed:
         ListTasks(tm, *listProject, *listContext, *listTag, *listStatus,
             *listStartBefore, *listStartAfter, *listDueBefore, *listDueAfter,
+            *listEndBefore, *listEndAfter, // Pass the new end date filters
             *listSortBy, *listOrder, *listFormat, *listNotes)
 
     case holidayAddCmd.Parsed:
