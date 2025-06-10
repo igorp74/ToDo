@@ -194,7 +194,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
     //     fmt.Println("----------------------------------------------------------------------------------------------------------------")
     case DisplayMinimal:
         fmt.Println("----------------------------------------------------------------------------------------------------------------")
-        fmt.Printf("%-5s %-30s %-20s %-20s %-15s %-10s\n", "ID", "Title", "Project", "Tags", "Contexst", "Status")
+        fmt.Printf("%-5s    %-20s %-80s\n", "ID", "Project", "Title")
         fmt.Println("----------------------------------------------------------------------------------------------------------------")
     }
 
@@ -300,15 +300,15 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
             status_str := ""
             switch task.Status {
-            case "pending":
-                status_str = style_bold + fg_yellow + "pending" + style_reset
-            case "completed":
-                status_str = style_bold + fg_green + "completed" + style_reset
-            case "cancelled":
-                status_str = style_bold + fg_red + "canceled" + style_reset
-            case "waiting":
-                status_str = style_bold + fg_blue + "waiting" + style_reset
-            }
+                case "pending":
+                    status_str = style_bold + fg_yellow + "pending" + style_reset
+                case "completed":
+                    status_str = style_bold + fg_green + "completed" + style_reset
+                case "cancelled":
+                    status_str = style_bold + fg_red + "canceled" + style_reset
+                case "waiting":
+                    status_str = style_bold + fg_blue + "waiting" + style_reset
+                }
             titleParts = append(titleParts, status_str)
 
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " | ")))
@@ -376,13 +376,13 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
 
             durationParts := []string{}
-            if len(totalDurationStr) > 0 {
+            if len(totalDurationStr) > 0 && totalDurationStr != "N/A" {
                 durationParts = append(durationParts, "⌛ Duration: " + totalDurationStr)
             }
-            if len(workingDurationStr) > 0 {
+            if len(workingDurationStr) > 0 && workingDurationStr != "N/A" {
                 durationParts = append(durationParts, "⌚ Working: " + workingDurationStr)
             }
-            if waitingDurationStr != "0s" { // Only add if there's a non-zero waiting calendar duration
+            if waitingDurationStr != "0s" && waitingDurationStr != "N/A" { // Only add if there's a non-zero waiting calendar duration
                 durationParts = append(durationParts, "⏳ Waiting (Calendar): " + waitingDurationStr)
             }
             if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A" { // Only add if there's a non-zero waiting working duration
@@ -418,25 +418,45 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             sb.WriteString(fmt.Sprintf("\n%s%-5d%s", fg_red, task.ID, style_reset))
 
 
-            titleParts := []string{style_bold + task.Title + style_reset}
+            titleParts := []string{}
 
-            if len(task.ProjectName.String) > 0 {
-                titleParts = append(titleParts, fg_green + task.ProjectName.String + style_reset)
-            }
-            if len(task.Tags) > 0 {
-                titleParts = append(titleParts, fg_blue + strings.Join(task.Tags, ", ") + style_reset)
-            }
-            if len(task.Contexts) > 0 {
-                titleParts = append(titleParts, fg_magenta + strings.Join(task.Contexts, ", ") + style_reset)
-            }
-            if len(titleParts) > 0 {
-                sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " | ")))
-            }
+            status_str := ""
+            switch task.Status {
+                case "pending":
+                    status_str = "🚀"
+                case "completed":
+                    status_str = "✅"
+                case "cancelled":
+                    status_str = "❌"
+                case "waiting":
+                    status_str = "⏸️"
+                }
+            titleParts = append(titleParts, status_str)
+            titleParts = append(titleParts, style_bold + task.Title + style_reset)
+
+            sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " ")))
 
 
             if task.Description.Valid && task.Description.String != "" {
-                sb.WriteString(fmt.Sprintf("      %s%s%s%s\n", style_italic, fg_yellow, task.Description.String, style_reset))
+                sb.WriteString(fmt.Sprintf("         %s%s%s%s\n", style_italic, fg_yellow, task.Description.String, style_reset))
             }
+
+
+            projectParts := []string{}
+
+            if len(task.ProjectName.String) > 0 {
+                projectParts = append(projectParts, fg_green + task.ProjectName.String + style_reset)
+            }
+            if len(task.Tags) > 0 {
+                projectParts = append(projectParts, fg_blue + strings.Join(task.Tags, ", ") + style_reset)
+            }
+            if len(task.Contexts) > 0 {
+                projectParts = append(projectParts, fg_magenta + strings.Join(task.Contexts, ", ") + style_reset)
+            }
+            if len(projectParts) > 0 {
+                sb.WriteString(fmt.Sprintf("         %s\n", strings.Join(projectParts, " | ")))
+            }
+
 
             // Display Notes
             if len(task.Notes) > 0 {
@@ -459,22 +479,20 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             status_str := ""
             switch task.Status {
             case "pending":
-                status_str = style_bold + fg_yellow + "pending" + style_reset
+                status_str = "🚀"
             case "completed":
-                status_str = bg_green + fg_black + "completed" + style_reset
+                status_str = "✅"
             case "cancelled":
-                status_str = style_bold + fg_red + "canceled" + style_reset
+                status_str = "❌"
             case "waiting":
-                status_str = style_underline + fg_blue + "waiting" + style_reset // Corrected line
+                status_str = "⏸️"
             }
 
-            fmt.Printf("%-5d %s%-30s%s %s%-20s%s %s%-20s%s %s%-15s%s %-10s\n",
+            fmt.Printf("%-5d%s  %s%-20s%s %s%-80s%s\n",
                 task.ID,
-                style_bold, task.Title, style_reset,
+                status_str,
                 fg_green, task.ProjectName.String, style_reset,
-                fg_blue, strings.Join(task.Tags, ", "), style_reset,
-                fg_magenta, strings.Join(task.Contexts, ", "), style_reset,
-                status_str)
+                style_bold, task.Title, style_reset)
         }
     }
     fmt.Println("----------------------------------------------------------------------------------------------------------------")
@@ -547,6 +565,7 @@ func ListProjects(tm *TodoManager) {
     }
     defer rows.Close()
 
+    fmt.Println("----------------------------")
     fmt.Println("  ID    Project")
     fmt.Println("----------------------------")
     found := false
@@ -558,7 +577,7 @@ func ListProjects(tm *TodoManager) {
             log.Printf("Error scanning project: %v", err)
             continue
         }
-        fmt.Printf("  %-5d %s\n", id, name)
+        fmt.Printf("  %-5d %s%s%s\n", id, fg_green, name, style_reset)
     }
     if !found {
         fmt.Println("No projects found.")
@@ -577,6 +596,7 @@ func ListContexts(tm *TodoManager) {
     }
     defer rows.Close()
 
+    fmt.Println("----------------------------")
     fmt.Println("  ID    Context")
     fmt.Println("----------------------------")
     found := false
@@ -588,7 +608,7 @@ func ListContexts(tm *TodoManager) {
             log.Printf("Error scanning context: %v", err)
             continue
         }
-        fmt.Printf("  %-5d %s\n", id, name)
+        fmt.Printf("  %-5d %s%s%s\n", id, fg_magenta, name, style_reset)
     }
     if !found {
         fmt.Println("No contexts found.")
@@ -607,6 +627,7 @@ func ListTags(tm *TodoManager) {
     }
     defer rows.Close()
 
+    fmt.Println("----------------------------")
     fmt.Println("  ID    Tag")
     fmt.Println("----------------------------")
     found := false
@@ -618,7 +639,7 @@ func ListTags(tm *TodoManager) {
             log.Printf("Error scanning tag: %v", err)
             continue
         }
-        fmt.Printf("  %-5d %s\n", id, name)
+        fmt.Printf("  %-5d %s%s%s\n", id, fg_blue, name, style_reset)
     }
     if !found {
         fmt.Println("No tags found.")
