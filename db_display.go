@@ -42,7 +42,8 @@ const (
 
 // ListTasks fetches and displays tasks based on filters and sorting.
 // Added endBefore and endAfter parameters for filtering by end date.
-func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusFilter, startBefore, startAfter, dueBefore, dueAfter, endBefore, endAfter, sortBy, order string, format int, displayNotes string) {
+// Added taskIDs for filtering by specific task IDs, and searchText for title/description search.
+func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusFilter, startBefore, startAfter, dueBefore, dueAfter, endBefore, endAfter, sortBy, order string, format int, displayNotes string, taskIDs []int64, searchText string) {
     query := `
         SELECT
             t.id, t.title, t.description, p.name, t.start_date, t.due_date, t.end_date, t.status,
@@ -61,6 +62,24 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
     if statusFilter != "" && statusFilter != "all" {
         whereClauses = append(whereClauses, "t.status = ?")
         args = append(args, statusFilter)
+    }
+
+    // Filter by specific task IDs
+    if len(taskIDs) > 0 {
+        // Create a string of question marks for the IN clause: ?, ?, ?
+        placeholders := make([]string, len(taskIDs))
+        for i := range taskIDs {
+            placeholders[i] = "?"
+            args = append(args, taskIDs[i])
+        }
+        whereClauses = append(whereClauses, fmt.Sprintf("t.id IN (%s)", strings.Join(placeholders, ",")))
+    }
+
+    // Filter by search text in title or description
+    if searchText != "" {
+        searchPattern := "%" + searchText + "%"
+        whereClauses = append(whereClauses, "(t.title LIKE ? OR t.description LIKE ?)")
+        args = append(args, searchPattern, searchPattern)
     }
 
     // Date filters - parse with local timezone and then convert to UTC for query
@@ -255,6 +274,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         workingDurationStr := "N/A"
         waitingDurationStr := "N/A"
         waitingWorkingDurationStr := "N/A" // Initialize new string for waiting working duration
+        timeToDueStr := "" // New: for time to/after due date
 
 
         if task.StartDate.Valid {
@@ -279,6 +299,17 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             }
         }
 
+        // Calculate time to/after due date
+        if task.DueDate.Valid {
+            diffDuration, isOverdue := CalculateTimeDifference(task.DueDate)
+            if isOverdue {
+                timeToDueStr = fmt.Sprintf(" (%s%s%s overdue)", fg_red, FormatDuration(diffDuration), style_reset)
+            } else {
+                timeToDueStr = fmt.Sprintf(" (%s%s%s remaining)", fg_cyan, FormatDuration(diffDuration), style_reset)
+            }
+        }
+
+
         // Calculate waiting duration (calendar time)
         waitingDuration := CalculateWaitingDuration(task)
         waitingDurationStr = FormatDuration(waitingDuration)
@@ -300,15 +331,15 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
             status_str := ""
             switch task.Status {
-                case "pending":
-                    status_str = style_bold + fg_yellow + "pending" + style_reset
-                case "completed":
-                    status_str = style_bold + fg_green + "completed" + style_reset
-                case "cancelled":
-                    status_str = style_bold + fg_red + "canceled" + style_reset
-                case "waiting":
-                    status_str = style_bold + fg_blue + "waiting" + style_reset
-                }
+            case "pending":
+                status_str = style_bold + fg_yellow + "pending" + style_reset
+            case "completed":
+                status_str = style_bold + fg_green + "completed" + style_reset
+            case "cancelled":
+                status_str = style_bold + fg_red + "canceled" + style_reset
+            case "waiting":
+                status_str = style_bold + fg_blue + "waiting" + style_reset
+            }
             titleParts = append(titleParts, status_str)
 
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " | ")))
@@ -345,7 +376,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 dateParts = append( dateParts,  "🏁 End: " + FormatDisplayDateTime(task.EndDate) )
             }
             if task.DueDate.Valid {
-                dateParts = append( dateParts, "⏱️ Due: " + FormatDisplayDateTime(task.DueDate) )
+                dateParts = append( dateParts, "⏱️ Due: " + FormatDisplayDateTime(task.DueDate) + timeToDueStr) // Added time to due date
             }
             if task.Recurrence.Valid {
                 interval := ""
@@ -422,15 +453,15 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
             status_str := ""
             switch task.Status {
-                case "pending":
-                    status_str = "🚀"
-                case "completed":
-                    status_str = "✅"
-                case "cancelled":
-                    status_str = "❌"
-                case "waiting":
-                    status_str = "⏸️"
-                }
+            case "pending":
+                status_str = "🚀"
+            case "completed":
+                status_str = "✅"
+            case "cancelled":
+                status_str = "❌"
+            case "waiting":
+                status_str = "⏸️"
+            }
             titleParts = append(titleParts, status_str)
             titleParts = append(titleParts, style_bold + task.Title + style_reset)
 
@@ -457,10 +488,15 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 sb.WriteString(fmt.Sprintf("         %s\n", strings.Join(projectParts, " | ")))
             }
 
+            // Add due date and time to due
+            if task.DueDate.Valid {
+                sb.WriteString(fmt.Sprintf("         Due: %s%s%s\n", FormatDisplayDateTime(task.DueDate), timeToDueStr, style_reset))
+            }
+
 
             // Display Notes
             if len(task.Notes) > 0 {
-                sb.WriteString(fmt.Sprintf("      %s%sNotes:%s\n", style_bold, fg_green, style_reset))
+                sb.WriteString(fmt.Sprintf("         📝-----------------------------\n"))
                 // Iterate backwards to display newest (largest ID) first
                 for j := len(task.Notes) - 1; j >= 0; j-- {
                     note := task.Notes[j]
@@ -648,4 +684,3 @@ func ListTags(tm *TodoManager) {
         log.Fatalf("Error after listing tags: %v", err)
     }
 }
-

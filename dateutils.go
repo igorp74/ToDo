@@ -47,6 +47,11 @@ func FormatDuration(d time.Duration) string { // Renamed to FormatDuration
         return "0s" // Changed to a shorter format for minimal display
     }
 
+    // Make duration positive for display
+    if totalSeconds < 0 {
+        totalSeconds = -totalSeconds
+    }
+
     days := totalSeconds / (24 * 3600)
     remainingSecondsAfterDays := totalSeconds % (24 * 3600)
     hours := remainingSecondsAfterDays / 3600
@@ -183,6 +188,23 @@ func CalculateDurationToDueDate(task Task) time.Duration { // Returns time.Durat
     return dueDate.Sub(now)
 }
 
+// CalculateTimeDifference calculates the time difference between a given NullableTime and now.
+// It returns the absolute duration and a boolean indicating if the given time is in the past (true for overdue).
+func CalculateTimeDifference(targetDate NullableTime) (time.Duration, bool) {
+    if !targetDate.Valid {
+        return 0, false // No valid date, no difference
+    }
+
+    now := time.Now() // Local time
+    target := targetDate.Time.Local() // Convert to local for comparison
+
+    if target.Before(now) {
+        return now.Sub(target), true // Target is in the past, return positive duration and true for overdue
+    }
+    return target.Sub(now), false // Target is in the future, return positive duration and false for not overdue
+}
+
+
 // CalculateWaitingDuration calculates the duration of the waiting period for a task.
 // It returns the duration as time.Duration.
 func CalculateWaitingDuration(task Task) time.Duration {
@@ -311,4 +333,3 @@ func MinTime(t1, t2 time.Time) time.Time {
     }
     return t2
 }
-

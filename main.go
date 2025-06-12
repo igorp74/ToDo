@@ -89,7 +89,6 @@ func main() {
     deleteNoteCmd := parser.NewCommand("delete-note", "Delete one or more notes by ID.")
     deleteNoteIDs := deleteNoteCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10')"})
     deleteNoteAll := deleteNoteCmd.Flag("all", "", &Options{Help: "Delete all notes"})
-    // New flags for task-specific note deletion
     deleteNoteTaskID := deleteNoteCmd.Int("task-id", "ti", &Options{Help: "ID of the task whose notes should be deleted"})
     deleteNoteAllForTask := deleteNoteCmd.Flag("all-for-task", "", &Options{Help: "Delete all notes associated with the specified task ID"})
 
@@ -110,6 +109,10 @@ func main() {
     listOrder := listCmd.String("order", "", &Options{Default: "asc", Help: "Sort order (asc, desc)"})
     listFormat := listCmd.Int("format", "f", &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal"})
     listNotes := listCmd.String("notes", "n", &Options{Default: "none", Help: "Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes)"})
+    // New flags for listing tasks by ID and search text
+    listTaskIDs := listCmd.String("ids", "i", &Options{Help: "Comma-separated IDs or ID ranges of tasks to list (e.g., '1,2,3-5,10')"})
+    listSearch := listCmd.String("search", "S", &Options{Help: "Search for text in task titles and descriptions (case-insensitive, uses %LIKE%)"})
+
 
     // Holiday commands
     holidayCmd := parser.NewCommand("holiday", "Manage holidays.")
@@ -270,10 +273,22 @@ func main() {
             os.Exit(1)
         }
     case listCmd.Parsed:
+        var parsedTaskIDs []int64
+        if *listTaskIDs != "" {
+            var parseErr error
+            parsedTaskIDs, parseErr = parseIDs(*listTaskIDs)
+            if parseErr != nil {
+                fmt.Printf("Error parsing task IDs for list: %v\n", parseErr)
+                fmt.Println(parser.Usage(nil))
+                os.Exit(1)
+            }
+        }
+
         ListTasks(tm, *listProject, *listContext, *listTag, *listStatus,
             *listStartBefore, *listStartAfter, *listDueBefore, *listDueAfter,
             *listEndBefore, *listEndAfter, // Pass the new end date filters
-            *listSortBy, *listOrder, *listFormat, *listNotes)
+            *listSortBy, *listOrder, *listFormat, *listNotes,
+            parsedTaskIDs, *listSearch) // Pass the new task ID list and search text
 
     case holidayAddCmd.Parsed:
         tm.AddHoliday(*holidayAddDate, *holidayAddName)
@@ -745,4 +760,3 @@ func (p *Parser) Usage(err error) string {
     }
     return sb.String()
 }
-

@@ -1434,4 +1434,3 @@ func (tm *TodoManager) DeleteAllNotesForTask(taskID int64) {
     }
     fmt.Printf("Deleted %d notes for task %d.\n", rowsAffected, taskID)
 }
-

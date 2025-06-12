@@ -80,4 +80,3 @@ type WorkingHours struct {
     EndMinute   int // 0-59
     BreakMinutes int // Added: Duration of break in minutes
 }
-
