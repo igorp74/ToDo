@@ -109,9 +109,8 @@ func main() {
     listOrder := listCmd.String("order", "", &Options{Default: "asc", Help: "Sort order (asc, desc)"})
     listFormat := listCmd.Int("format", "f", &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal"})
     listNotes := listCmd.String("notes", "n", &Options{Default: "none", Help: "Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes)"})
-    // New flags for listing tasks by ID and search text
     listTaskIDs := listCmd.String("ids", "i", &Options{Help: "Comma-separated IDs or ID ranges of tasks to list (e.g., '1,2,3-5,10')"})
-    listSearch := listCmd.String("search", "S", &Options{Help: "Search for text in task titles and descriptions (case-insensitive, uses %LIKE%)"})
+    listSearch := listCmd.String("search", "S", &Options{Help: "Search for text in task titles, descriptions and notes (case-insensitive)"})
 
 
     // Holiday commands
