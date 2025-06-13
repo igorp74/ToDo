@@ -1,5 +1,6 @@
 # ToDo
-Simple CLI app for task management with SQLite as a backend
+Simple CLI app for task management with SQLite as a backend.
+
 
 ## ⚙️ BUILD:
 
@@ -137,7 +138,7 @@ Usage: `todo [global options] <command> [command options]`
     -f, --format        Output format: 0=Full, 1=Condensed, 2=Minimal (default: 0)
     -n, --notes Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes) (default: none)
     -i, --ids   Comma-separated IDs or ID ranges of tasks to list (e.g., '1,2,3-5,10')
-    -S, --search        Search for text in task titles and descriptions (case-insensitive, uses %LIKE%)
+    -S, --search        Search for text in task titles, descriptions and notes (case-insensitive)
 
 
 
