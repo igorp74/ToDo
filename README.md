@@ -177,9 +177,16 @@ Usage: `todo [global options] <command> [command options]`
 
 
 # 📽️ Examples
-This example shows very basic task creations and then updating projects over task range.
+This example shows very basic task adding, updating, list and delete. Also time management, working hours and duration.
 
 
 
-https://github.com/user-attachments/assets/dcd0e6b8-5d7d-4565-8ea8-eb2c8a1df01c
+
+https://github.com/user-attachments/assets/65333094-2f1a-4611-a3b2-a076c4e548f7
+
+Also, a bit lighter example of changing viewing formats and adding notes to the tasks
+
+
+
+https://github.com/user-attachments/assets/d19f3fae-4c4b-4c3d-824f-49c3efbbec45
 
