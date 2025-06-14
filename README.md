@@ -176,17 +176,80 @@ Usage: `todo [global options] <command> [command options]`
   `tags`  List all tags.
 
 
-# 📽️ Examples
-This example shows very basic task adding, updating, list and delete. Also time management, working hours and duration.
+# 🎬 Examples
+
+Adding task could be light at first:
+
+![image](https://github.com/user-attachments/assets/f672fa5e-3e2e-420a-9471-56fcafa457c4)
+
+Let's see how app will display entered tasks
+
+![image](https://github.com/user-attachments/assets/6873cf1c-b5a7-45b4-b292-6e3e5fa11c5e)
+
+## Update tasks
+Now, we can start grouping tasks into projects, adding tags, which can be useful for tagging a team, a ticket or whatever key word that has some meaning to you
+
+![Screenshot_20250614_105430](https://github.com/user-attachments/assets/4fb57a76-00b8-41b9-9826-10b9cb462bb2)
+
+Also, we can add contexts, which are similar as tags and they are here for better granulation of meta-data around your tasks
+
+![Screenshot_20250614_110615](https://github.com/user-attachments/assets/d8406ff9-1f98-4e5d-b838-e6a8cabeb4e0)
+
+## Display formats
+
+OK, with some content we can display tasks in 3 format: 
+
+**Default** - this format shows all relevant data related to tasks formated to be functional and logical
+
+![Screenshot_20250614_113927](https://github.com/user-attachments/assets/fba8d3db-97e2-4e91-ae2a-c510d9218ee8)
+
+**Compact** - Keeps more relevant details about tasks, and hide details like start - end times. For clearer overview
+
+![Screenshot_20250614_114117](https://github.com/user-attachments/assets/a66508ee-c46f-4df9-8c64-5d87945e0511)
+
+**Minimal** - this one is suitable for large number of tasks overview, only task title and project related
+
+![Screenshot_20250614_114144](https://github.com/user-attachments/assets/279f0454-05a3-4747-89dc-e18cec510396)
+
+## Durations
+
+With flag -E we will end tasks with the current timestamp as the end date
+
+![Screenshot_20250614_115231](https://github.com/user-attachments/assets/efdbbf4e-624b-4eea-8f38-968e10f4be95)
+
+But, wait a minute... where is duration in working hours ?
+
+![image](https://github.com/user-attachments/assets/b9f82af1-0f35-4027-807c-48ec5a0dec12)
+
+We need to define working hours first. It could be different for every day in the week, including weekends. So it is up to you how you will define it.
+
+Once defined, it should be working...
+
+![image](https://github.com/user-attachments/assets/f581dfbb-6179-4689-bc27-56f9adb159b7)
+
+But noo, still nothing... This time we cannot even see **Task 1** on the list.
+
+This is because `todo list` command, by default lists only tasks with `pending` status (not finished). So, let's list task with all statuses `-st all`
+
+![image](https://github.com/user-attachments/assets/621ec296-0f97-4cb4-8907-f1d8a8422522)
+
+Again, no working hours ?! Let's double check the time... Task starts on Saturday and ends on Saturday as well... 
+
+Is it Saturday defined in working hours ? Of course no! A-haa! 😀 Let's move start time to some working day:
+
+![image](https://github.com/user-attachments/assets/ba33f816-e547-4d9d-98c5-6383f219f216)
+
+Finally! That is it. I can see duration in working hours.
+
+### When I need to wait for something or someone...
+
+What if I have delay in the process ? Let's say I need to wait for someone else to do something before I can continue. Maybe I need to wait for IT department for access to something...
+We can define start waiting and end waiting times during the task duration:
+
+![image](https://github.com/user-attachments/assets/f5aea4c2-65dd-4486-9135-66944a2872fe)
+
+And you may see the different duration now. But working hours are the same. Yes, I want it that way.I might chnage it later, though.
 
 
 
-
-https://github.com/user-attachments/assets/65333094-2f1a-4611-a3b2-a076c4e548f7
-
-Also, a bit lighter example of changing viewing formats and adding notes to the tasks
-
-
-
-https://github.com/user-attachments/assets/d19f3fae-4c4b-4c3d-824f-49c3efbbec45
 
