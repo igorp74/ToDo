@@ -251,8 +251,8 @@ We can define **start waiting** `-sw` and **end waiting** `-ew` times during the
 And you may see the different duration now. But working hours are the same. Yes, I want it that way.I might change it later, though.
 
 ## Notes
-And who will remember what is going on if task duration prolongues, or what the next step is ? That is where notes shine!
-We can add notes to the tasks. Unlimited (well, this is not entirely true, since you may hit SQLite limit of 281 terabytes, who knows... Some people are notoholics. There is nothing wrong in that.)
+Notes are not the same as task descriptions. They are similar, but notes have timestamps and descriptions and you may enter them as many as you like. Notes are useful for tracking parts of the tasks and saving your personal remarks along the task journey. You may display them (all or n last ones) or not.
+Number of notes is unlimited (well, this is not entirely true, since you may hit SQLite limit of 281 terabytes, who knows... Some people are notoholics. There is nothing wrong in that.)
 
 ![image](https://github.com/user-attachments/assets/dec43c81-2e4b-4b36-ad9f-58cbdafa9b73)
 
