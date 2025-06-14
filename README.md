@@ -244,12 +244,16 @@ Finally! That is it. I can see duration in working hours.
 ### When I need to wait for something or someone...
 
 What if I have delay in the process ? Let's say I need to wait for someone else to do something before I can continue. Maybe I need to wait for IT department for access to something...
-We can define start waiting and end waiting times during the task duration:
+We can define **start waiting** `-sw` and **end waiting** `-ew` times during the task duration:
 
 ![image](https://github.com/user-attachments/assets/f5aea4c2-65dd-4486-9135-66944a2872fe)
 
-And you may see the different duration now. But working hours are the same. Yes, I want it that way.I might chnage it later, though.
+And you may see the different duration now. But working hours are the same. Yes, I want it that way.I might change it later, though.
 
+## Notes
+And who will remember what is going on if task duration prolongues, or what the next step is ? That is where notes shine!
+We can add notes to the tasks. Unlimited (well, this is not entirely true, since you may hit SQLite limit of 281 terabytes, who knows... Some people are notoholics. There is nothing wrong in that.)
 
+![image](https://github.com/user-attachments/assets/dec43c81-2e4b-4b36-ad9f-58cbdafa9b73)
 
-
+Notes will not be displayed by default. You need to enter the `-n all` flag for showing all notes, or `-n 2` to show only last 2 notes, for example.
