@@ -199,23 +199,23 @@ Now, we can start grouping tasks into projects, adding tags, which can be useful
 
 ![Screenshot_20250614_105430](https://github.com/user-attachments/assets/4fb57a76-00b8-41b9-9826-10b9cb462bb2)
 
-Also, we can add contexts, which are similar as tags and they are here for better granulation of meta-data around your tasks
+Also, we can add contexts, which are similar to tags and they are here for better granulation of meta-data around your tasks
 
 ![Screenshot_20250614_110615](https://github.com/user-attachments/assets/d8406ff9-1f98-4e5d-b838-e6a8cabeb4e0)
 
 ## Display formats
 
-OK, with some content we can display tasks in 3 format: 
+OK, tasks can be displayed in 3 format: 
 
 **Default** - this format shows all relevant data related to tasks formated to be functional and logical
 
 ![Screenshot_20250614_113927](https://github.com/user-attachments/assets/fba8d3db-97e2-4e91-ae2a-c510d9218ee8)
 
-**Compact** - Keeps more relevant details about tasks, and hide details like start - end times. For clearer overview
+**Compact** - Keeps more relevant details about tasks, and hide details like start - end times. For clearer overview, without titles and emojis...
 
 ![Screenshot_20250614_114117](https://github.com/user-attachments/assets/a66508ee-c46f-4df9-8c64-5d87945e0511)
 
-**Minimal** - this one is suitable for large number of tasks overview, only task title and project related
+**Minimal** - this one is suitable for large number of tasks overview, only task titles and projects related
 
 ![Screenshot_20250614_114144](https://github.com/user-attachments/assets/279f0454-05a3-4747-89dc-e18cec510396)
 
