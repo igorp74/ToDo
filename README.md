@@ -1,6 +1,9 @@
 # ToDo
 Simple CLI app for task management with SQLite as a backend.
 
+* [Build](https://github.com/igorp74/ToDo?tab=readme-ov-file#-build)
+* [Help](https://github.com/igorp74/ToDo?tab=readme-ov-file#-help)
+* [Examples](https://github.com/igorp74/ToDo?tab=readme-ov-file#-examples)
 
 ## ⚙️ BUILD:
 
