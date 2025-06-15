@@ -1,6 +1,9 @@
 # ToDo
 Simple CLI app for task management with SQLite as a backend, recurrence tasks, notes and calendar/working hours duration.
 
+![Screenshot_20250615_131918](https://github.com/user-attachments/assets/d7b6b367-17f5-43cd-9022-fdaf04873514)
+
+
 * [Build](https://github.com/igorp74/ToDo?tab=readme-ov-file#-build)
 * [Help](https://github.com/igorp74/ToDo?tab=readme-ov-file#-help)
 * [Examples](https://github.com/igorp74/ToDo?tab=readme-ov-file#-examples)
