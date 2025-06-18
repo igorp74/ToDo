@@ -25,7 +25,7 @@ func main() {
     addStart := addCmd.String("start-date", "s", &Options{Help: "Start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     addDue := addCmd.String("due-date", "D", &Options{Help: "Due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     addEnd := addCmd.String("end-date", "E", &Options{Help: "End date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."}) // Added
-    addRecurrence := addCmd.String("recurrence", "r", &Options{Help: "Recurrence pattern (daily, weekly, monthly, yearly)"})
+    addRecurrence := addCmd.String("recurrence", "r", &Options{Help: "Recurrence pattern (daily, weekly, monthly, yearly, or comma-separated days of week for weekly, e.g., 'weekly:Tue,Thu')"})
     addRecurrenceInterval := addCmd.Int("recurrence-interval", "ri", &Options{Default: 1, Help: "Interval for recurrence (e.g., 2 for every 2 days)"})
     addContexts := addCmd.StringList("contexts", "c", &Options{Help: "Comma-separated list of contexts (e.g., 'work,home')"})
     addTags := addCmd.StringList("tags", "T", &Options{Help: "Comma-separated list of tags (e.g., 'urgent,bug')"})
@@ -50,7 +50,7 @@ func main() {
     updateDue := updateCmd.String("due-date", "D", &Options{Help: "New due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     updateEnd := updateCmd.String("end-date", "E", &Options{Help: "New end date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     updateStatus := updateCmd.String("status", "st", &Options{Help: "New status (pending, completed, cancelled, waiting)"}) // Unified flag
-    updateRecurrence := updateCmd.String("recurrence", "r", &Options{Help: "New recurrence pattern"})
+    updateRecurrence := updateCmd.String("recurrence", "r", &Options{Help: "New recurrence pattern (daily, weekly, monthly, yearly, or comma-separated days of week for weekly, e.g., 'weekly:Tue,Thu')"})
     updateRecurrenceInterval := updateCmd.Int("recurrence-interval", "ri", &Options{Help: "New interval for recurrence"})
     updateContexts := updateCmd.StringList("contexts", "c", &Options{Help: "Comma-separated list of contexts (replaces existing)"})
     updateTags := updateCmd.StringList("tags", "T", &Options{Help: "Comma-separated list of tags (replaces existing)"})
@@ -92,7 +92,6 @@ func main() {
     deleteNoteTaskID := deleteNoteCmd.Int("task-id", "ti", &Options{Help: "ID of the task whose notes should be deleted"})
     deleteNoteAllForTask := deleteNoteCmd.Flag("all-for-task", "", &Options{Help: "Delete all notes associated with the specified task ID"})
 
-
     // List command
     listCmd := parser.NewCommand("list", "List tasks.")
     listProject := listCmd.String("project", "p", &Options{Help: "Filter by project name"})
@@ -112,7 +111,6 @@ func main() {
     listTaskIDs := listCmd.String("ids", "i", &Options{Help: "Comma-separated IDs or ID ranges of tasks to list (e.g., '1,2,3-5,10')"})
     listSearch := listCmd.String("search", "S", &Options{Help: "Search for text in task titles, descriptions and notes (case-insensitive)"})
 
-
     // Holiday commands
     holidayCmd := parser.NewCommand("holiday", "Manage holidays.")
     holidayAddCmd := holidayCmd.NewCommand("add", "Add a new holiday.")
@@ -122,7 +120,6 @@ func main() {
     holidayDelCmd := holidayCmd.NewCommand("del", "Delete one or more holidays by ID or delete all.") // Modified help text
     holidayDelIDs := holidayDelCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of holidays to delete (e.g., '1,2,3-5,10')"})
     holidayDelAll := holidayDelCmd.Flag("all", "", &Options{Help: "Delete all holidays"})
-
 
     // Working hours commands
     workhoursCmd := parser.NewCommand("workhours", "Manage working hours.")
@@ -137,7 +134,6 @@ func main() {
     workhoursDelCmd := workhoursCmd.NewCommand("del", "Delete working hours for one or more days or delete all.") // Modified help text
     workhoursDelDays := workhoursDelCmd.String("days", "", &Options{Help: "Comma-separated day of week numbers or ranges to delete working hours for (e.g., '1,2,3-5')"})
     workhoursDelAll := workhoursDelCmd.Flag("all", "", &Options{Help: "Delete all working hours"})
-
 
     // List projects command
     listProjectsCmd := parser.NewCommand("projects", "List all projects.")
@@ -759,3 +755,4 @@ func (p *Parser) Usage(err error) string {
     }
     return sb.String()
 }
+

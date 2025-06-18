@@ -9,6 +9,7 @@ import (
     "time"
 
     _ "modernc.org/sqlite" // SQLite driver without CGO
+    "slices"
 )
 
 const (
@@ -46,7 +47,7 @@ func (tm *TodoManager) Close() {
     tm.db.Close()
 }
 
-// initDB initializes the database schema.
+// initDB initializes the database schema, adds indexes, and sets up triggers.
 func (tm *TodoManager) initDB() {
     schema := `
     CREATE TABLE IF NOT EXISTS projects (
@@ -73,7 +74,7 @@ func (tm *TodoManager) initDB() {
         due_date DATETIME,
         end_date DATETIME,
         status TEXT NOT NULL DEFAULT 'pending', -- pending, completed, cancelled, waiting
-        recurrence TEXT, -- daily, weekly, monthly, yearly
+        recurrence TEXT, -- daily, weekly, monthly, yearly, or weekly:Mon,Tue
         recurrence_interval INTEGER DEFAULT 1,
         start_waiting_date DATETIME,
         end_waiting_date DATETIME,
@@ -120,14 +121,20 @@ func (tm *TodoManager) initDB() {
         description TEXT NOT NULL,
         FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
     );
+
+    -- New table for task creation timestamps
+    CREATE TABLE IF NOT EXISTS task_metadata (
+        task_id INTEGER PRIMARY KEY,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
+    );
     `
     _, err := tm.db.Exec(schema)
     if err != nil {
         log.Fatalf("Error initializing database schema: %v", err)
     }
 
-    // Add original_task_id column if it doesn't exist
-    // This handles schema migration for existing databases
+    // Add original_task_id column if it doesn't exist (for schema migration)
     _, err = tm.db.Exec(`
         PRAGMA foreign_keys = OFF;
         ALTER TABLE tasks ADD COLUMN original_task_id INTEGER;
@@ -139,35 +146,101 @@ func (tm *TodoManager) initDB() {
             log.Fatalf("Error adding original_task_id column to tasks table: %v", err)
         }
     }
-    /*
-        // Add start_minute and end_minute columns to working_hours if they don't exist
-        _, err = tm.db.Exec(`
-            ALTER TABLE working_hours ADD COLUMN start_minute INTEGER NOT NULL DEFAULT 0;
-        `)
+
+    // Add indexes for faster searches
+    indexes := []string{
+        "CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);",
+        "CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);",
+        "CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);",
+        "CREATE INDEX IF NOT EXISTS idx_task_contexts_task_id ON task_contexts(task_id);",
+        "CREATE INDEX IF NOT EXISTS idx_task_contexts_context_id ON task_contexts(context_id);",
+        "CREATE INDEX IF NOT EXISTS idx_task_tags_task_id ON task_tags(task_id);",
+        "CREATE INDEX IF NOT EXISTS idx_task_tags_tag_id ON task_tags(tag_id);",
+        "CREATE INDEX IF NOT EXISTS idx_task_notes_task_id ON task_notes(task_id);",
+        "CREATE INDEX IF NOT EXISTS idx_tasks_start_date ON tasks(start_date);",     // New index
+        "CREATE INDEX IF NOT EXISTS idx_tasks_end_date ON tasks(end_date);",         // New index
+        "CREATE INDEX IF NOT EXISTS idx_tasks_title ON tasks(title);",               // New index for search
+        "CREATE INDEX IF NOT EXISTS idx_tasks_description ON tasks(description);",   // New index for search
+        "CREATE INDEX IF NOT EXISTS idx_task_notes_description ON task_notes(description);", // New index for note search
+    }
+
+    for _, indexSQL := range indexes {
+        _, err := tm.db.Exec(indexSQL)
         if err != nil {
-            if !strings.Contains(err.Error(), "duplicate column name: start_minute") {
-                log.Fatalf("Error adding start_minute column to working_hours table: %v", err)
-            }
+            log.Fatalf("Error creating index: %v", err)
+        }
+    }
+
+    // Add the trigger for created_at timestamp in task_metadata
+    trigger := `
+    CREATE TRIGGER IF NOT EXISTS trg_tasks_after_insert
+    AFTER INSERT ON tasks
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO task_metadata (task_id, created_at)
+        VALUES (NEW.id, CURRENT_TIMESTAMP);
+    END;
+    `
+    _, err = tm.db.Exec(trigger)
+    if err != nil {
+        log.Fatalf("Error creating trigger trg_tasks_after_insert: %v", err)
+    }
+
+    // Backfill task_metadata for old tasks
+    tm.backfillTaskMetadata()
+}
+
+// backfillTaskMetadata populates created_at dates for tasks that existed before the trigger was added.
+func (tm *TodoManager) backfillTaskMetadata() {
+    tx, err := tm.db.Begin()
+    if err != nil {
+        log.Printf("Error starting transaction for backfilling metadata: %v", err)
+        return
+    }
+    defer tx.Rollback() // Ensure rollback if any error occurs
+
+    rows, err := tx.Query(`
+        SELECT t.id, t.start_date
+        FROM tasks t
+        LEFT JOIN task_metadata tm ON t.id = tm.task_id
+        WHERE tm.task_id IS NULL;
+    `)
+    if err != nil {
+        log.Printf("Error querying tasks for backfilling metadata: %v", err)
+        return
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var taskID int64
+        var startDate sql.NullTime
+        if err := rows.Scan(&taskID, &startDate); err != nil {
+            log.Printf("Error scanning task for backfilling metadata: %v", err)
+            continue
         }
 
-        _, err = tm.db.Exec(`
-            ALTER TABLE working_hours ADD COLUMN end_minute INTEGER NOT NULL DEFAULT 0;
-        `)
-        if err != nil {
-            if !strings.Contains(err.Error(), "duplicate column name: end_minute") {
-                log.Fatalf("Error adding end_minute column to working_hours table: %v", err)
+        if startDate.Valid {
+            _, err := tx.Exec( // Use tx.Exec here
+                "INSERT INTO task_metadata (task_id, created_at) VALUES (?, ?)",
+                taskID, startDate.Time.UTC(),
+            )
+            if err != nil {
+                log.Printf("Error inserting backfilled created_at for task %d: %v", taskID, err)
+            } else {
+                fmt.Printf("Backfilled created_at for task %d using start_date: %s\n", taskID, startDate.Time.UTC().Format("2006-01-02 15:04:05"))
             }
+        } else {
+            log.Printf("Task %d has no valid start_date to backfill created_at. Skipping.", taskID)
         }
+    }
 
-        // Add break_minutes column to working_hours if it doesn't exist
-        _, err = tm.db.Exec(`
-            ALTER TABLE working_hours ADD COLUMN break_minutes INTEGER NOT NULL DEFAULT 0;
-        `)
-        if err != nil {
-            if !strings.Contains(err.Error(), "duplicate column name: break_minutes") {
-                log.Fatalf("Error adding break_minutes column to working_hours table: %v", err)
-            }
-        }*/
+    if err := rows.Err(); err != nil {
+        log.Printf("Error after scanning tasks for backfilling metadata: %v", err)
+    }
+
+    if err := tx.Commit(); err != nil {
+        log.Printf("Error committing backfill metadata transaction: %v", err)
+    }
 }
 
 // getID inserts a name into a lookup table (contexts, tags, projects) and returns its ID.
@@ -338,7 +411,6 @@ func (tm *TodoManager) AddTask(tx *sql.Tx, title, description, project string, s
             status = "completed"
         }
     }
-
 
     // Handle start waiting date
     if isStartWaitingSet {
@@ -608,7 +680,7 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
             endUpdateApplied = true
 
             // If end_date is set via -E, and status is not explicitly provided, set status to 'completed'
-            if status == "" && oldStatus != "completed" { // Only change if not already completed
+            if status == "" && oldStatus != "completed" { // Only change if still default pending status
                 status = "completed" // Set the status variable, which will be used below
             }
         }
@@ -762,7 +834,6 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
             }
         }
 
-
         // Handle tags updates
         if clearTags {
             // Clear all existing tags
@@ -856,7 +927,53 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                 interval = 1
             }
 
-            switch currentTask.Recurrence.String {
+            recurrenceParts := strings.Split(currentTask.Recurrence.String, ":")
+            recurrenceType := recurrenceParts[0]
+            var daysOfWeek []time.Weekday
+            if len(recurrenceParts) > 1 && recurrenceType == "weekly" {
+                // Map string abbreviation to time.Weekday
+                dayAbbrToWeekday := map[string]time.Weekday{
+                    "Sun": time.Sunday,
+                    "Mon": time.Monday,
+                    "Tue": time.Tuesday,
+                    "Wed": time.Wednesday,
+                    "Thu": time.Thursday,
+                    "Fri": time.Friday,
+                    "Sat": time.Saturday,
+                }
+                // Iterate over comma-separated day/range strings
+                for _, part := range strings.Split(recurrenceParts[1], ",") {
+                    part = strings.TrimSpace(part)
+                    if strings.Contains(part, "-") {
+                        // Handle ranges like "Mon-Wed"
+                        rangeParts := strings.Split(part, "-")
+                        if len(rangeParts) == 2 {
+                            startDayStr := rangeParts[0]
+                            endDayStr := rangeParts[1]
+                            startDay, startOk := dayAbbrToWeekday[startDayStr]
+                            endDay, endOk := dayAbbrToWeekday[endDayStr]
+
+                            if startOk && endOk {
+                                // Iterate from startDay to endDay, handling wrap-around (e.g., Fri-Mon)
+                                for i := range 7 {
+                                    currentDay := (startDay + time.Weekday(i)) % 7
+                                    daysOfWeek = append(daysOfWeek, currentDay)
+                                    if currentDay == endDay {
+                                        break
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Handle single days like "Mon", "Fri"
+                        if day, ok := dayAbbrToWeekday[part]; ok {
+                            daysOfWeek = append(daysOfWeek, day)
+                        }
+                    }
+                }
+            }
+
+            switch recurrenceType {
             case "daily":
                 nextStartDate = nextStartDate.AddDate(0, 0, int(interval))
                 if currentTask.DueDate.Valid {
@@ -872,18 +989,51 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                     nextEndWaitingDate = nextEndWaitingDate.AddDate(0, 0, int(interval))
                 }
             case "weekly":
-                nextStartDate = nextStartDate.AddDate(0, 0, int(interval)*7)
-                if currentTask.DueDate.Valid {
-                    nextDueDate = nextDueDate.AddDate(0, 0, int(interval)*7)
-                }
-                if currentTask.EndDate.Valid { // Add for EndDate
-                    nextEndDate = nextEndDate.AddDate(0, 0, int(interval)*7)
-                }
-                if isNextStartWaitingSet {
-                    nextStartWaitingDate = nextStartWaitingDate.AddDate(0, 0, int(interval)*7)
-                }
-                if isNextEndWaitingSet {
-                    nextEndWaitingDate = nextEndWaitingDate.AddDate(0, 0, int(interval)*7)
+                if len(daysOfWeek) > 0 {
+                    // Find the next occurrence on one of the specified days of the week
+                    foundNextDate := false
+                    for i := 1; i <= 7*int(interval); i++ { // Check up to interval weeks ahead
+                        tempDate := nextStartDate.AddDate(0, 0, i)
+                        if slices.Contains(daysOfWeek, tempDate.Weekday()) {
+                                nextStartDate = tempDate
+                                // Adjust due and end dates to maintain the original duration from the new start date
+                                if currentTask.DueDate.Valid {
+                                    nextDueDate = nextStartDate.Add(currentTask.DueDate.Time.Sub(currentTask.StartDate.Time))
+                                }
+                                if currentTask.EndDate.Valid {
+                                    nextEndDate = nextStartDate.Add(currentTask.EndDate.Time.Sub(currentTask.StartDate.Time))
+                                }
+                                if isNextStartWaitingSet {
+                                    nextStartWaitingDate = nextStartDate.Add(currentTask.StartWaitingDate.Time.Sub(currentTask.StartDate.Time))
+                                }
+                                if isNextEndWaitingSet {
+                                    nextEndWaitingDate = nextStartDate.Add(currentTask.EndWaitingDate.Time.Sub(currentTask.StartDate.Time))
+                                }
+                                foundNextDate = true
+                            }
+                        if foundNextDate {
+                            break
+                        }
+                    }
+                    if !foundNextDate {
+                        log.Printf("Warning: Could not find next recurrence date for task %d with pattern '%s'.", id, currentTask.Recurrence.String)
+                        continue
+                    }
+                } else {
+                    // Fallback to simple weekly recurrence if no specific days are set
+                    nextStartDate = nextStartDate.AddDate(0, 0, int(interval)*7)
+                    if currentTask.DueDate.Valid {
+                        nextDueDate = nextDueDate.AddDate(0, 0, int(interval)*7)
+                    }
+                    if currentTask.EndDate.Valid {
+                        nextEndDate = nextEndDate.AddDate(0, 0, int(interval)*7)
+                    }
+                    if isNextStartWaitingSet {
+                        nextStartWaitingDate = nextStartWaitingDate.AddDate(0, 0, int(interval)*7)
+                    }
+                    if isNextEndWaitingSet {
+                        nextEndWaitingDate = nextEndWaitingDate.AddDate(0, 0, int(interval)*7)
+                    }
                 }
             case "monthly":
                 nextStartDate = nextStartDate.AddDate(0, int(interval), 0)
@@ -1193,7 +1343,6 @@ func (tm *TodoManager) DeleteAllWorkingHours() {
     }
 }
 
-
 // GetWorkingHours fetches all defined working hours from the database.
 func (tm *TodoManager) GetWorkingHours() (map[time.Weekday]WorkingHours, error) {
     hours := make(map[time.Weekday]WorkingHours)
@@ -1414,7 +1563,7 @@ func (tm *TodoManager) DeleteAllNotes() {
     if err != nil {
         log.Fatalf("Error checking rows affected for deleting all notes: %v", err)
     }
-    fmt.Printf("Deleted %d notes.\n", rowsAffected)
+    fmt.Printf("Deleted %d notes.\\n", rowsAffected)
     // Reset the auto-increment sequence for task_notes table
     _, err = tm.db.Exec("UPDATE sqlite_sequence SET seq = 0 WHERE name = 'task_notes'")
     if err != nil {
@@ -1434,3 +1583,4 @@ func (tm *TodoManager) DeleteAllNotesForTask(taskID int64) {
     }
     fmt.Printf("Deleted %d notes for task %d.\n", rowsAffected, taskID)
 }
+

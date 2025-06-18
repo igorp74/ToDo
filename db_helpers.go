@@ -53,7 +53,7 @@ type Task struct {
     DueDate            NullableTime
     EndDate            NullableTime   // Completion date
     Status             string         // e.g., pending, completed, cancelled, waiting
-    Recurrence         sql.NullString // e.g., "daily", "weekly"
+    Recurrence         sql.NullString // e.g., "daily", "weekly", "weekly:Tue,Thu"
     RecurrenceInterval sql.NullInt64  // e.g., 1, 2
     StartWaitingDate   NullableTime   // Task cannot be started before this date
     EndWaitingDate     NullableTime   // Task cannot be started after this date
@@ -80,3 +80,4 @@ type WorkingHours struct {
     EndMinute   int // 0-59
     BreakMinutes int // Added: Duration of break in minutes
 }
+

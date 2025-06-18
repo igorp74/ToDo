@@ -49,9 +49,11 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
     query := `
         SELECT
             t.id, t.title, t.description, p.name, t.start_date, t.due_date, t.end_date, t.status,
-            t.recurrence, t.recurrence_interval, t.start_waiting_date, t.end_waiting_date, t.original_task_id
+            t.recurrence, t.recurrence_interval, t.start_waiting_date, t.end_waiting_date, t.original_task_id,
+            COALESCE(tm.created_at, t.start_date) as created_at_ts -- Get created_at from task_metadata or fallback to start_date
         FROM tasks t
         LEFT JOIN projects p ON t.project_id = p.id
+        LEFT JOIN task_metadata tm ON t.id = tm.task_id -- Join with new metadata table
     `
     args := []any{}
     whereClauses := []string{"1=1"} // Start with a true condition to simplify AND logic
@@ -208,7 +210,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
     switch format {
     case DisplayMinimal:
         fmt.Println("----------------------------------------------------------------------------------------------------------------")
-        fmt.Printf("%-5s    %-20s %-80s\n", "ID", "Project", "Title")
+        fmt.Printf("%-5s    %-23s  %-20s %-80s\n", "ID", "Created", "Project", "Title")
         fmt.Println("----------------------------------------------------------------------------------------------------------------")
     }
 
@@ -219,9 +221,10 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         var recurrenceInterval sql.NullInt64
         var startDate, dueDate, endDate, startWaitingDate, endWaitingDate sql.NullTime
         var originalTaskID sql.NullInt64
+        var createdAtStr sql.NullString // Changed to scan created_at into a string
 
         err := rows.Scan(&task.ID, &task.Title, &desc, &project_name, &startDate, &dueDate, &endDate, &task.Status,
-            &recurrence, &recurrenceInterval, &startWaitingDate, &endWaitingDate, &originalTaskID)
+            &recurrence, &recurrenceInterval, &startWaitingDate, &endWaitingDate, &originalTaskID, &createdAtStr) // Scan into string
         if err != nil {
             log.Printf("Error scanning task: %v", err)
             continue
@@ -237,6 +240,17 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         task.StartWaitingDate = NullableTime{Time: startWaitingDate.Time, Valid: startWaitingDate.Valid}
         task.EndWaitingDate = NullableTime{Time: endWaitingDate.Time, Valid: endWaitingDate.Valid}
         task.OriginalTaskID = originalTaskID
+
+        var createdAt NullableTime
+        if createdAtStr.Valid {
+            // Parse the string into NullableTime
+            parsedCreatedAt, parseErr := ParseDateTime(createdAtStr.String, time.UTC) // Assume UTC for DB-stored timestamps
+            if parseErr != nil {
+                log.Printf("Warning: Could not parse created_at timestamp '%s' for task %d: %v", createdAtStr.String, task.ID, parseErr)
+            } else {
+                createdAt = parsedCreatedAt
+            }
+        }
 
         // Fetch contexts and tags
         task.Contexts = tm.GetTaskNames(int64(task.ID), "task_contexts", "contexts")
@@ -324,11 +338,23 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             }
             titleParts = append(titleParts, status_str)
 
+            if task.Recurrence.Valid {
+                interval := ""
+                if task.RecurrenceInterval.Valid {
+                    interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
+                }
+                titleParts = append(titleParts, "🔄 "+fg_blue+task.Recurrence.String+interval+style_reset)
+
+            }
+
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " | ")))
+
 
             if task.Description.Valid && task.Description.String != "" {
                 sb.WriteString(fmt.Sprintf("      📜 %s%s%s%s\n", style_italic, fg_yellow, task.Description.String, style_reset))
             }
+
+
 
             projectParts := []string{}
 
@@ -345,6 +371,35 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 sb.WriteString(fmt.Sprintf("      %s\n", strings.Join(projectParts, " | ")))
             }
 
+
+
+            timeParts := []string{}
+
+            if createdAt.Valid {
+                timeParts = append(timeParts, "✨ Added: "+FormatDisplayDateTime(createdAt))
+            }
+            if task.DueDate.Valid {
+                timeParts = append(timeParts, "⏱️ Due: "+FormatDisplayDateTime(task.DueDate)+"  "+timeToDueStr)
+            }
+
+            if len(timeParts) > 0 {
+                sb.WriteString(fmt.Sprintf("      %s\n", strings.Join(timeParts, " | ")))
+            }
+
+
+            // if task.Recurrence.Valid {
+            //     interval := ""
+            //     if task.RecurrenceInterval.Valid {
+            //         interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
+            //     }
+            //     sb.WriteString(fmt.Sprintf("      🔄 Recurrence: %s%s%s%s\n", fg_blue, task.Recurrence.String, interval, style_reset))
+            // }
+
+
+            // if createdAt.Valid {
+            //     sb.WriteString(fmt.Sprintf("      ✨ Created: %s\n", FormatDisplayDateTime(createdAt)))
+            // }
+
             dateParts := []string{}
 
             if task.StartDate.Valid {
@@ -353,20 +408,14 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             if task.EndDate.Valid {
                 dateParts = append(dateParts, "🏁 End: "+FormatDisplayDateTime(task.EndDate))
             }
-            if task.DueDate.Valid {
-                dateParts = append(dateParts, "⏱️ Due: "+FormatDisplayDateTime(task.DueDate)+timeToDueStr) // Added time to due date
-            }
-            if task.Recurrence.Valid {
-                interval := ""
-                if task.RecurrenceInterval.Valid {
-                    interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
-                }
-                dateParts = append(dateParts, "🔄 Recurrence: "+task.Recurrence.String+interval)
+            if len(totalDurationStr) > 0 && totalDurationStr != "N/A" {
+                dateParts = append(dateParts, "(" + style_bold + fg_cyan + totalDurationStr + style_reset + ")")
             }
 
             if len(dateParts) > 0 {
                 sb.WriteString(fmt.Sprintf("      %s\n", strings.Join(dateParts, " | ")))
             }
+
 
             waitingParts := []string{}
 
@@ -376,28 +425,29 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             if task.EndWaitingDate.Valid {
                 waitingParts = append(waitingParts, "▶️ End: "+FormatDisplayDateTime(task.EndWaitingDate))
             }
+            if waitingDurationStr != "0s" && waitingDurationStr != "N/A" { // Only add if there's a non-zero waiting calendar duration
+                waitingParts = append(waitingParts, "(" + fg_red + waitingDurationStr + style_reset + ")")
+            }
 
             if len(waitingParts) > 0 {
                 sb.WriteString(fmt.Sprintf("      %s\n", strings.Join(waitingParts, " | ")))
             }
 
+
+
             durationParts := []string{}
-            if len(totalDurationStr) > 0 && totalDurationStr != "N/A" {
-                durationParts = append(durationParts, "⌛ Duration: "+totalDurationStr)
-            }
             if len(workingDurationStr) > 0 && workingDurationStr != "N/A" {
-                durationParts = append(durationParts, "⌚ Working: "+workingDurationStr)
-            }
-            if waitingDurationStr != "0s" && waitingDurationStr != "N/A" { // Only add if there's a non-zero waiting calendar duration
-                durationParts = append(durationParts, "⏳ Waiting (Calendar): "+waitingDurationStr)
+                durationParts = append(durationParts, "⏳ Working: "+style_bold+fg_green+" "+workingDurationStr+" "+style_reset)
             }
             if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A" { // Only add if there's a non-zero waiting working duration
-                durationParts = append(durationParts, "🚧 Waiting (Working): "+waitingWorkingDurationStr)
+                durationParts = append(durationParts, "🚧 Waiting: "+fg_red+waitingWorkingDurationStr+style_reset)
             }
 
             if len(durationParts) > 0 {
                 sb.WriteString(fmt.Sprintf("      %s\n", strings.Join(durationParts, " | ")))
             }
+
+
 
             // Display Notes
             if len(task.Notes) > 0 {
@@ -434,12 +484,33 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             }
             titleParts = append(titleParts, status_str)
             titleParts = append(titleParts, style_bold+task.Title+style_reset)
+            if task.Recurrence.Valid {
+                interval := ""
+                if task.RecurrenceInterval.Valid {
+                    interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
+                }
+                titleParts = append(titleParts, "  🔄 "+fg_cyan+task.Recurrence.String+interval+style_reset)
 
+            }
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " ")))
+
 
             if task.Description.Valid && task.Description.String != "" {
                 sb.WriteString(fmt.Sprintf("         %s%s%s%s\n", style_italic, fg_yellow, task.Description.String, style_reset))
             }
+
+
+            // if createdAt.Valid {
+            //     sb.WriteString(fmt.Sprintf("         ✨ Created: %s\n", FormatDisplayDateTime(createdAt)))
+            // }
+
+            // Add due date and time to due
+            if task.DueDate.Valid {
+                sb.WriteString(fmt.Sprintf("         %s%s%s\n", FormatDisplayDateTime(task.DueDate), timeToDueStr, style_reset))
+            }
+
+
+
 
             projectParts := []string{}
 
@@ -456,10 +527,21 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 sb.WriteString(fmt.Sprintf("         %s\n", strings.Join(projectParts, " | ")))
             }
 
-            // Add due date and time to due
-            if task.DueDate.Valid {
-                sb.WriteString(fmt.Sprintf("         Due: %s%s%s\n", FormatDisplayDateTime(task.DueDate), timeToDueStr, style_reset))
+
+
+            durationParts := []string{}
+            if len(workingDurationStr) > 0 && workingDurationStr != "N/A" {
+                durationParts = append(durationParts, style_bold+fg_green+workingDurationStr+style_reset)
             }
+            if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A" { // Only add if there's a non-zero waiting working duration
+                durationParts = append(durationParts, fg_red+waitingWorkingDurationStr+style_reset)
+            }
+
+            if len(durationParts) > 0 {
+                sb.WriteString(fmt.Sprintf("         %s\n", strings.Join(durationParts, "  ")))
+            }
+
+
 
             // Display Notes
             if len(task.Notes) > 0 {
@@ -489,9 +571,10 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 status_str = "⏸️"
             }
 
-            fmt.Printf("%-5d%s  %s%-20s%s %s%-80s%s\n",
+            fmt.Printf("%-5d%s  %-23s  %s%-20s%s %s%-80s%s\n",
                 task.ID,
                 status_str,
+                FormatDisplayDateTime(createdAt),
                 fg_green, task.ProjectName.String, style_reset,
                 style_bold, task.Title, style_reset)
         }
@@ -515,7 +598,7 @@ func ListHolidays(tm *TodoManager) {
         return
     }
     for _, h := range holidays { // Iterate over slice
-        // Holidays are stored as YYYY-MM-DD strings, no time component.
+        // Holidays are stored asYYYY-MM-DD strings, no time component.
         // Display them directly.
         fmt.Printf("  %-5d %-10s %s\n", h.ID, h.Date.Time.Format("2006-01-02"), h.Name) // Print ID and formatted date
     }

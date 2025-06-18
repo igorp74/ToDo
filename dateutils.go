@@ -22,10 +22,11 @@ func ParseDateTime(dateTimeStr string, loc *time.Location) (NullableTime, error)
     }
 
     layouts := []string{
-        "2006-01-02 15:04:05", // YYYY-MM-DD HH:MM:SS
-        "2006-01-02",          // YYYY-MM-DD
-        "01-02-2006",          // MM-DD-YYYY
-        "02-01-2006",          // DD-MM-YYYY
+        "2006-01-02 15:04:05",         // YYYY-MM-DD HH:MM:SS
+        "2006-01-02",                  // YYYY-MM-DD
+        "01-02-2006",                  // MM-DD-YYYY
+        "02-01-2006",                  // DD-MM-YYYY
+        "2006-01-02 15:04:05 -0700 MST", // Added for "YYYY-MM-DD HH:MM:SS +0000 UTC" format
     }
 
     for _, layout := range layouts {
@@ -36,7 +37,7 @@ func ParseDateTime(dateTimeStr string, loc *time.Location) (NullableTime, error)
         }
     }
 
-    return NullableTime{Valid: false}, fmt.Errorf("could not parse date/time '%s'. Please use YYYY-MM-DD HH:MM:SS, YYYY-MM-DD, MM-DD-YYYY, or DD-MM-YYYY format", dateTimeStr)
+    return NullableTime{Valid: false}, fmt.Errorf("could not parse date/time '%s'. Please use YYYY-MM-DD HH:MM:SS, YYYY-MM-DD, MM-DD-YYYY, DD-MM-YYYY, or 'YYYY-MM-DD HH:MM:SS +0000 UTC' format", dateTimeStr)
 }
 
 // FormatDuration formats a time.Duration into a human-readable string (days, hours, minutes, seconds),
@@ -195,7 +196,7 @@ func CalculateTimeDifference(targetDate NullableTime) (time.Duration, bool) {
         return 0, false // No valid date, no difference
     }
 
-    now := time.Now() // Local time
+    now := time.Now()         // Local time
     target := targetDate.Time.Local() // Convert to local for comparison
 
     if target.Before(now) {
@@ -203,7 +204,6 @@ func CalculateTimeDifference(targetDate NullableTime) (time.Duration, bool) {
     }
     return target.Sub(now), false // Target is in the future, return positive duration and false for not overdue
 }
-
 
 // CalculateWaitingDuration calculates the duration of the waiting period for a task.
 // It returns the duration as time.Duration.
@@ -333,3 +333,4 @@ func MinTime(t1, t2 time.Time) time.Time {
     }
     return t2
 }
+
