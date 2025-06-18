@@ -1,7 +1,8 @@
 # ToDo
 Simple CLI app for task management with SQLite as a backend, task recurrence, notes and calendar&working hours duration.
 
-![Screenshot_20250615_131918](https://github.com/user-attachments/assets/d7b6b367-17f5-43cd-9022-fdaf04873514)
+![Screenshot_20250618_232417](https://github.com/user-attachments/assets/a64ba1e2-540b-4aa1-baa3-4548bb8e0e24)
+
 
 
 * [Build](https://github.com/igorp74/ToDo?tab=readme-ov-file#-build)
@@ -62,7 +63,7 @@ Usage: `todo [global options] <command> [command options]`
     -s, --start-date    Start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
     -D, --due-date      Due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
     -E, --end-date      End date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time.
-    -r, --recurrence    Recurrence pattern (daily, weekly, monthly, yearly)
+    -r, --recurrence    Recurrence pattern (daily, weekly, monthly, yearly, or comma-separated days of week for weekly, e.g., 'weekly:Tue,Thu')
     -ri, --recurrence-interval  Interval for recurrence (e.g., 2 for every 2 days) (default: 1)
     -c, --contexts      Comma-separated list of contexts (e.g., 'work,home')
     -T, --tags  Comma-separated list of tags (e.g., 'urgent,bug')
