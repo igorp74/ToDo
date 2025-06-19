@@ -187,22 +187,21 @@ Usage: `todo [global options] <command> [command options]`
 
 # 🎬 Examples
 
-Adding task could be light at first:
+Adding task could be rich:
 
-![image](https://github.com/user-attachments/assets/f672fa5e-3e2e-420a-9471-56fcafa457c4)
+![Screenshot_20250620_002419](https://github.com/user-attachments/assets/5d1696b0-a849-47d9-85ff-33a9224c1e4e)
 
-Let's see how app will display entered tasks
 
-![image](https://github.com/user-attachments/assets/6873cf1c-b5a7-45b4-b292-6e3e5fa11c5e)
+But also could be very fast:
+
+![Screenshot_20250620_002517](https://github.com/user-attachments/assets/b09c5840-7aaf-4e65-aeee-a8eec426ffb0)
+
 
 ## Update tasks
-Now, we can start grouping tasks into projects, adding tags, which can be useful for tagging a team, a ticket or whatever key word that has some meaning to you
+Now, we can start grouping tasks into projects, adding tags, which can be useful for tagging a team, a ticket or whatever key word that has some meaning to you. Also, we can add contexts.
 
-![Screenshot_20250614_105430](https://github.com/user-attachments/assets/4fb57a76-00b8-41b9-9826-10b9cb462bb2)
+![Screenshot_20250620_002905](https://github.com/user-attachments/assets/734ad7da-7a27-488b-9846-45d21b0f90f4)
 
-Also, we can add contexts, which are similar to tags and they are here for better granulation of meta-data around your tasks
-
-![Screenshot_20250614_110615](https://github.com/user-attachments/assets/d8406ff9-1f98-4e5d-b838-e6a8cabeb4e0)
 
 ## Display formats
 
@@ -210,45 +209,36 @@ OK, tasks can be displayed in 3 format:
 
 **Default** - this format shows all relevant data related to tasks formated to be functional and logical
 
-![Screenshot_20250614_113927](https://github.com/user-attachments/assets/fba8d3db-97e2-4e91-ae2a-c510d9218ee8)
+![Screenshot_20250620_002947](https://github.com/user-attachments/assets/4b86ed30-8673-4da3-b293-45a1849cd89c)
+
 
 **Compact** - Keeps more relevant details about tasks, and hide details like start - end times. For clearer overview, without titles and emojis...
 
-![Screenshot_20250614_114117](https://github.com/user-attachments/assets/a66508ee-c46f-4df9-8c64-5d87945e0511)
+![Screenshot_20250620_003022](https://github.com/user-attachments/assets/b1ef7bcf-2d20-4244-90c7-20182790adda)
+
 
 **Minimal** - this one is suitable for large number of tasks overview, only task titles and projects related
 
-![Screenshot_20250614_114144](https://github.com/user-attachments/assets/279f0454-05a3-4747-89dc-e18cec510396)
+![Screenshot_20250620_003039](https://github.com/user-attachments/assets/5066ec7c-4bf4-48c5-ae5c-e8a31645cf81)
+
 
 ## Durations
 
-With flag -E we will end tasks with the current timestamp as the end date
+With flag `-E` we will end tasks with the current timestamp as the end date, and `-s` will set up the start time:
 
-![Screenshot_20250614_115231](https://github.com/user-attachments/assets/efdbbf4e-624b-4eea-8f38-968e10f4be95)
+![Screenshot_20250620_003259](https://github.com/user-attachments/assets/f50f36cb-6eb7-4167-9610-de138270a798)
+
 
 But, wait a minute... where is duration in working hours ?
 
-![image](https://github.com/user-attachments/assets/b9f82af1-0f35-4027-807c-48ec5a0dec12)
+![image](https://github.com/user-attachments/assets/f3e937da-544e-4901-a93c-83eb248bb635)
 
 We need to define working hours first. It could be different for every day in the week, including weekends. So it is up to you how you will define it.
 
 Once defined, it should be working...
 
-![image](https://github.com/user-attachments/assets/f581dfbb-6179-4689-bc27-56f9adb159b7)
+![image](https://github.com/user-attachments/assets/a6223cfc-b14b-4bbd-b9f3-584b3ca84271)
 
-But noo, still nothing... This time we cannot even see **Task 1** on the list.
-
-This is because `todo list` command, by default lists only tasks with `pending` status (not finished). So, let's list task with all statuses `-st all`
-
-![image](https://github.com/user-attachments/assets/621ec296-0f97-4cb4-8907-f1d8a8422522)
-
-Again, no working hours ?! Let's double check the time... Task starts on Saturday and ends on Saturday as well... 
-
-Is it Saturday defined in working hours ? Of course no! A-haa! 😀 Let's move start time to some working day:
-
-![image](https://github.com/user-attachments/assets/ba33f816-e547-4d9d-98c5-6383f219f216)
-
-Finally! That is it. I can see duration in working hours.
 
 ### When I need to wait for something or someone...
 
