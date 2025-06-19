@@ -245,7 +245,8 @@ Once defined, it should be working...
 What if I have delay in the process ? Let's say I need to wait for someone else to do something before I can continue. Maybe I need to wait for IT department for access to something...
 We can define **start waiting** `-sw` and **end waiting** `-ew` times during the task duration:
 
-![image](https://github.com/user-attachments/assets/f5aea4c2-65dd-4486-9135-66944a2872fe)
+![Screenshot_20250620_005020](https://github.com/user-attachments/assets/e1707f7c-abe0-4889-afd9-87a55f8280da)
+
 
 And you may see the different duration now. But working hours are the same. Yes, I want it that way.I might change it later, though.
 
@@ -253,6 +254,6 @@ And you may see the different duration now. But working hours are the same. Yes,
 Notes are not the same as task descriptions. They are similar, but notes have timestamps and descriptions and you may enter them as many as you like. Notes are useful for tracking parts of the tasks and saving your personal remarks along the task journey. You may display them (all or n last ones) or not.
 Number of notes is unlimited (well, this is not entirely true, since you may hit SQLite limit of 281 terabytes, who knows... Some people are notoholics. There is nothing wrong in that.)
 
-![image](https://github.com/user-attachments/assets/dec43c81-2e4b-4b36-ad9f-58cbdafa9b73)
+![Screenshot_20250620_005332](https://github.com/user-attachments/assets/e885343e-e647-4505-a4ca-69e0ac73ca9f)
 
 Notes will not be displayed by default. You need to enter the `-n all` flag for showing all notes, or `-n 2` to show only last 2 notes, for example.
