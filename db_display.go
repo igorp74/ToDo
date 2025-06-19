@@ -493,8 +493,10 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                     interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
                 }
                 titleParts = append(titleParts, "  🔄 "+fg_cyan+task.Recurrence.String+interval+style_reset)
-                titleParts = append(titleParts, style_bold+timeToDueStr+style_reset)
 
+            }
+            if task.DueDate.Valid {
+                titleParts = append(titleParts, style_bold+timeToDueStr+style_reset)
             }
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " ")))
 
