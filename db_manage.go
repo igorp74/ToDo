@@ -230,7 +230,15 @@ func (tm *TodoManager) backfillTaskMetadata() {
                 fmt.Printf("Backfilled created_at for task %d using start_date: %s\n", taskID, startDate.Time.UTC().Format("2006-01-02 15:04:05"))
             }
         } else {
-            log.Printf("Task %d has no valid start_date to backfill created_at. Skipping.", taskID)
+            _, err := tx.Exec( // Use tx.Exec here
+                "INSERT INTO task_metadata (task_id, created_at) VALUES (?, ?)",
+                taskID, time.Now().UTC(),
+            )
+            if err != nil {
+                log.Printf("Error inserting backfilled created_at with current timestamp for task %d: %v", taskID, err)
+            } else {
+                fmt.Printf("Backfilled created_at for task %d using current time: %s\n", taskID, time.Now().UTC().Format("2006-01-02 15:04:05"))
+            }
         }
     }
 

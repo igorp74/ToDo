@@ -346,6 +346,9 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 titleParts = append(titleParts, "🔄 "+fg_blue+task.Recurrence.String+interval+style_reset)
 
             }
+            if task.DueDate.Valid {
+                titleParts = append(titleParts, style_bold+timeToDueStr+style_reset)
+            }
 
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " | ")))
 
@@ -375,11 +378,11 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
             timeParts := []string{}
 
-            if createdAt.Valid {
-                timeParts = append(timeParts, "✨ Added: "+FormatDisplayDateTime(createdAt))
-            }
+            // if createdAt.Valid {
+            //     timeParts = append(timeParts, "✨ Added: "+FormatDisplayDateTime(createdAt))
+            // }
             if task.DueDate.Valid {
-                timeParts = append(timeParts, "⏱️ Due: "+FormatDisplayDateTime(task.DueDate)+"  "+timeToDueStr)
+                timeParts = append(timeParts, "⏰ Due:   "+FormatDisplayDateTime(task.DueDate))
             }
 
             if len(timeParts) > 0 {
@@ -409,7 +412,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 dateParts = append(dateParts, "🏁 End: "+FormatDisplayDateTime(task.EndDate))
             }
             if len(totalDurationStr) > 0 && totalDurationStr != "N/A" {
-                dateParts = append(dateParts, "(" + style_bold + fg_cyan + totalDurationStr + style_reset + ")")
+                dateParts = append(dateParts, "(" + fg_green + totalDurationStr + style_reset + ")")
             }
 
             if len(dateParts) > 0 {
@@ -490,6 +493,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                     interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
                 }
                 titleParts = append(titleParts, "  🔄 "+fg_cyan+task.Recurrence.String+interval+style_reset)
+                titleParts = append(titleParts, style_bold+timeToDueStr+style_reset)
 
             }
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " ")))
@@ -505,11 +509,9 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             // }
 
             // Add due date and time to due
-            if task.DueDate.Valid {
-                sb.WriteString(fmt.Sprintf("         %s%s%s\n", FormatDisplayDateTime(task.DueDate), timeToDueStr, style_reset))
-            }
-
-
+            // if task.DueDate.Valid {
+            //     sb.WriteString(fmt.Sprintf("         %s%s%s\n", FormatDisplayDateTime(task.DueDate), timeToDueStr, style_reset))
+            // }
 
 
             projectParts := []string{}
