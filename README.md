@@ -253,7 +253,6 @@ And you may see the different duration now. But working hours are the same. Yes,
 Notes are not the same as task descriptions. They are similar, but notes have timestamps and descriptions and you may enter them as many as you like. Notes are useful for tracking parts of the tasks and saving your personal remarks along the task journey. You may display them (all or n last ones) or not.
 Number of notes is unlimited (well, this is not entirely true, since you may hit SQLite limit of 281 terabytes, who knows... Some people are notoholics. There is nothing wrong in that.)
 
-![Screenshot_20250622_091108](https://github.com/user-attachments/assets/60e3b2ec-2397-4c46-aa06-f2340a33fdbb)
-
+![Screenshot_20250622_091201](https://github.com/user-attachments/assets/490a2d93-7e09-4ca0-9a8c-df72a64902d5)
 
 Notes will not be displayed by default. You need to enter the `-n all` flag for showing all notes, or `-n 2` to show only last 2 notes, for example.
