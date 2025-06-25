@@ -492,12 +492,13 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 if task.RecurrenceInterval.Valid {
                     interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
                 }
-                titleParts = append(titleParts, "  🔄 "+fg_cyan+task.Recurrence.String+interval+style_reset)
+                titleParts = append(titleParts, "  🔄 "+fg_blue+task.Recurrence.String+interval+style_reset)
 
             }
             if task.DueDate.Valid {
                 titleParts = append(titleParts, style_bold+timeToDueStr+style_reset)
             }
+
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " ")))
 
 
@@ -533,23 +534,25 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
 
 
-            durationParts := []string{}
-            if len(workingDurationStr) > 0 && workingDurationStr != "N/A" {
-                durationParts = append(durationParts, style_bold+fg_green+workingDurationStr+style_reset)
-            }
-            if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A" { // Only add if there's a non-zero waiting working duration
-                durationParts = append(durationParts, fg_red+waitingWorkingDurationStr+style_reset)
-            }
-
-            if len(durationParts) > 0 {
-                sb.WriteString(fmt.Sprintf("         %s\n", strings.Join(durationParts, "  ")))
-            }
-
+            // durationParts := []string{}
+            // if len(workingDurationStr) > 0 && workingDurationStr != "N/A" {
+            //     durationParts = append(durationParts, style_bold+fg_green+workingDurationStr+style_reset)
+            // }
+            // if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A" { // Only add if there's a non-zero waiting working duration
+            //     durationParts = append(durationParts, fg_red+waitingWorkingDurationStr+style_reset)
+            // }
+            // if len(totalDurationStr) > 0 && totalDurationStr != "N/A" {
+            //     durationParts = append(durationParts, "(" + fg_green + totalDurationStr + style_reset + ")")
+            // }
+            // if len(durationParts) > 0 {
+            //     sb.WriteString(fmt.Sprintf("         %s\n", strings.Join(durationParts, "  ")))
+            // }
+            // 
 
 
             // Display Notes
             if len(task.Notes) > 0 {
-                sb.WriteString(fmt.Sprintf("         📝-----------------------------\n"))
+                sb.WriteString("         📝-----------------------------\n")
                 // Iterate backwards to display newest (largest ID) first
                 for j := len(task.Notes) - 1; j >= 0; j-- {
                     note := task.Notes[j]
