@@ -186,20 +186,16 @@ Usage: `todo [global options] <command> [command options]`
 
 # 🎬 Examples
 
-Adding task could be rich:
+Adding task could be rich as the first entry, but also light, as the others:
 
-![Screenshot_20250620_002419](https://github.com/user-attachments/assets/5d1696b0-a849-47d9-85ff-33a9224c1e4e)
+![image](https://github.com/user-attachments/assets/0987b2dd-aeca-4e7b-b83e-7fb8bc56106c)
 
-
-But also could be very fast:
-
-![Screenshot_20250620_002517](https://github.com/user-attachments/assets/b09c5840-7aaf-4e65-aeee-a8eec426ffb0)
 
 
 ## Update tasks
 Now, we can start grouping tasks into projects, adding tags, which can be useful for tagging a team, a ticket or whatever key word that has some meaning to you. Also, we can add contexts.
 
-![Screenshot_20250620_002905](https://github.com/user-attachments/assets/734ad7da-7a27-488b-9846-45d21b0f90f4)
+![image](https://github.com/user-attachments/assets/f36f5ef0-664f-4221-a98e-b2b2f056a48e)
 
 
 ## Display formats
@@ -208,35 +204,40 @@ OK, tasks can be displayed in 3 format:
 
 **Default** - this format shows all relevant data related to tasks formated to be functional and logical
 
-![Screenshot_20250620_002947](https://github.com/user-attachments/assets/4b86ed30-8673-4da3-b293-45a1849cd89c)
+![image](https://github.com/user-attachments/assets/f8a5bfe5-8617-4e0e-b590-588f96d4e214)
 
 
 **Compact** - Keeps more relevant details about tasks, and hide details like start - end times. For clearer overview, without titles and emojis...
 
-![Screenshot_20250620_003022](https://github.com/user-attachments/assets/b1ef7bcf-2d20-4244-90c7-20182790adda)
+![image](https://github.com/user-attachments/assets/954ce171-6328-4add-8ac0-0655af542575)
 
 
 **Minimal** - this one is suitable for large number of tasks overview, only task titles and projects related
 
-![Screenshot_20250620_003039](https://github.com/user-attachments/assets/5066ec7c-4bf4-48c5-ae5c-e8a31645cf81)
+![image](https://github.com/user-attachments/assets/2279fbf5-f1d3-4389-8c15-a199ce77fa2e)
 
 
 ## Durations
 
-With flag `-E` we will end tasks with the current timestamp as the end date, and `-s` will set up the start time:
+With the flag `-D` we can set the due date and with `-s` and `-E` we could add/change start and end times.
 
-![Screenshot_20250620_003259](https://github.com/user-attachments/assets/f50f36cb-6eb7-4167-9610-de138270a798)
+![image](https://github.com/user-attachments/assets/9f2ce5f1-42d3-4f17-b3ef-9ffc46e4ebc7)
+
+
+If I want to see all tasks with all statuese, there is `-st` flag for showing the statuses. Default is pending, but we will use all here. Also, I would like to see only tasks 1 and 2:
+
+![image](https://github.com/user-attachments/assets/9ffe4b4a-e3e6-446d-9165-fbd9bdc6bce1)
 
 
 But, wait a minute... where is duration in working hours ?
 
-![image](https://github.com/user-attachments/assets/f3e937da-544e-4901-a93c-83eb248bb635)
-
 We need to define working hours first. It could be different for every day in the week, including weekends. So it is up to you how you will define it.
+
+![image](https://github.com/user-attachments/assets/d2e0caa2-bb2b-4852-b281-339003347b6d)
 
 Once defined, it should be working...
 
-![image](https://github.com/user-attachments/assets/a6223cfc-b14b-4bbd-b9f3-584b3ca84271)
+![image](https://github.com/user-attachments/assets/8d0c4ac8-d2bd-41e2-9d7a-50cd06635c32)
 
 
 ### When I need to wait for something or someone...
@@ -244,8 +245,7 @@ Once defined, it should be working...
 What if I have delay in the process ? Let's say I need to wait for someone else to do something before I can continue. Maybe I need to wait for IT department for access to something...
 We can define **start waiting** `-sw` and **end waiting** `-ew` times during the task duration:
 
-![Screenshot_20250622_090727](https://github.com/user-attachments/assets/2a962eac-1632-4f09-866e-87f47124231b)
-
+![image](https://github.com/user-attachments/assets/94ffc4ba-4da3-4b0d-8ded-7ef52e1bc274)
 
 And you may see the different duration now. But working hours are the same. Yes, I want it that way. I might change it later, though.
 
@@ -253,6 +253,11 @@ And you may see the different duration now. But working hours are the same. Yes,
 Notes are not the same as task descriptions. They are similar, but notes have timestamps and descriptions and you may enter them as many as you like. Notes are useful for tracking parts of the tasks and saving your personal remarks along the task journey. You may display them (all or n last ones) or not.
 Number of notes is unlimited (well, this is not entirely true, since you may hit SQLite limit of 281 terabytes, who knows... Some people are notoholics. There is nothing wrong in that.)
 
-![Screenshot_20250622_091201](https://github.com/user-attachments/assets/490a2d93-7e09-4ca0-9a8c-df72a64902d5)
+Entering notes
+
+![image](https://github.com/user-attachments/assets/4e79f399-01de-4c06-bfb8-30b85c8c1232)
 
 Notes will not be displayed by default. You need to enter the `-n all` flag for showing all notes, or `-n 2` to show only last 2 notes, for example.
+
+![image](https://github.com/user-attachments/assets/8c203484-d284-4f79-8778-07f58306177b)
+
