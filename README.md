@@ -1,7 +1,7 @@
 # ToDo
 Simple CLI app for task management with SQLite as a backend, task recurrence, notes and calendar&working hours duration.
 
-![Screenshot_20250620_005744](https://github.com/user-attachments/assets/78671f1d-1f55-4041-848a-530dd4899c5c)
+![image](https://github.com/user-attachments/assets/f9a96f35-2792-4a4f-9569-35ab1a7a6889)
 
 
 * [Build](https://github.com/igorp74/ToDo?tab=readme-ov-file#-build)
@@ -226,7 +226,7 @@ With the flag `-D` we can set the due date and with `-s` and `-E` we could add/c
 
 If I want to see all tasks with all statuese, there is `-st` flag for showing the statuses. Default is pending, but we will use all here. Also, I would like to see only tasks 1 and 2:
 
-![image](https://github.com/user-attachments/assets/9ffe4b4a-e3e6-446d-9165-fbd9bdc6bce1)
+![image](https://github.com/user-attachments/assets/7682842e-b75d-4df1-9c8e-9142c5ab9143)
 
 
 But, wait a minute... where is duration in working hours ?
@@ -245,7 +245,8 @@ Once defined, it should be working...
 What if I have delay in the process ? Let's say I need to wait for someone else to do something before I can continue. Maybe I need to wait for IT department for access to something...
 We can define **start waiting** `-sw` and **end waiting** `-ew` times during the task duration:
 
-![image](https://github.com/user-attachments/assets/94ffc4ba-4da3-4b0d-8ded-7ef52e1bc274)
+![image](https://github.com/user-attachments/assets/a67b3fb9-aee8-488f-8c64-42eaaf7ca950)
+
 
 And you may see the different duration now. But working hours are the same. Yes, I want it that way. I might change it later, though.
 
@@ -261,3 +262,19 @@ Notes will not be displayed by default. You need to enter the `-n all` flag for 
 
 ![image](https://github.com/user-attachments/assets/8c203484-d284-4f79-8778-07f58306177b)
 
+
+## Recurrence
+
+Recurrence is available with `-r` for  main recurrence type and `-ri` flags for recurrence interval.
+
+In the next example I will show you how to set recurrence on **Task 5** (ID 5) to repeat every 1 week on Monday, Wednesday and Friday.
+
+![image](https://github.com/user-attachments/assets/6407f0b6-acf6-4974-90b3-77bf40e2aa8f)
+
+Once we set original task with recurrence as completed, a new task with the same attributes, but with different ID would be created on the next date per recurrence. If there are due dates or waiting dates, they will be carry-over to be at same relative distance to the new start date as they were to the original date in previous task.
+
+![image](https://github.com/user-attachments/assets/a0965dc5-28c5-4e4f-a3c0-390882b4d839)
+
+Notice, that the **task** with recurrence which started on Monday, once completed will create **a new task** on the next day in recurrence interval (Wednesday) and carry-over due date to be on the same relative distance from start date as the original start-due dates.
+
+![image](https://github.com/user-attachments/assets/ace6cdc6-6140-4c3b-842d-de45d03c274e)
