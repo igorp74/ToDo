@@ -439,10 +439,10 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
 
             durationParts := []string{}
-            if len(workingDurationStr) > 0 && workingDurationStr != "N/A" {
+            if workingDurationStr != "0s" && workingDurationStr != "N/A" {
                 durationParts = append(durationParts, "⏳ Working: "+style_bold+fg_green+" "+workingDurationStr+" "+style_reset)
             }
-            if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A" { // Only add if there's a non-zero waiting working duration
+            if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A"  { // Only add if there's a non-zero waiting working duration
                 durationParts = append(durationParts, "🚧 Waiting: "+fg_red+waitingWorkingDurationStr+style_reset)
             }
 
@@ -535,7 +535,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
 
             // durationParts := []string{}
-            // if len(workingDurationStr) > 0 && workingDurationStr != "N/A" {
+            // if workingDurationStr != "0s" && workingDurationStr != "N/A" {
             //     durationParts = append(durationParts, style_bold+fg_green+workingDurationStr+style_reset)
             // }
             // if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A" { // Only add if there's a non-zero waiting working duration
@@ -547,7 +547,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             // if len(durationParts) > 0 {
             //     sb.WriteString(fmt.Sprintf("         %s\n", strings.Join(durationParts, "  ")))
             // }
-            // 
+
 
 
             // Display Notes
