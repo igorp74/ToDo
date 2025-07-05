@@ -25,10 +25,11 @@ Simple CLI app for task management
   * For grouping tasks, enriching organisation and make search more logical
 * **Filter**
   * You may filter you tasks per status, projects, tags and/or contexts. One in a time or all at once.
-  * You may filter tsks before or after start, due or end times    
+  * You may filter tasks before or after start, due or end times    
 * **Search**
   * Search for any text in task titles, descriptions and notes (case-insensitive)
-* ...and some more useful things...
+for all features and commands, please read the documentation
+ 
 
 # Documentation
 * [⚙️ Build](https://github.com/igorp74/ToDo/blob/31a550724265feef8abb814187c812d017a0189f/Documentation/Build.md)
