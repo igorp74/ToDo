@@ -18,7 +18,7 @@ Simple CLI app for task management
   * Essentially, this is for more precise calculating of working hours
 * **Working hours manager**
   * Define your working days in the week. As you want...
-* **3 different display formats**: Default, Compact and minimal
+* **3 different display formats**: Default, Compact and Minimal
   * It is not always importnat to see every tiny detail on your task or project, thus compact view
   * Sometimes, you want to check when did you create some task or only status of tasks per projects, in these cases you will use minimal view
 * **Projects, Tags, Contexts**
@@ -30,4 +30,5 @@ Simple CLI app for task management
   * Search for any text in task titles, descriptions and notes (case-insensitive)
 * ...and some more useful things...
 
-# [Documentation](https://github.com/igorp74/ToDo.wiki.git)
+# [Documentation](https://github.com/igorp74/ToDo.wiki)
+
