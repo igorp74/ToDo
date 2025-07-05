@@ -3,6 +3,7 @@ Simple CLI app for task management with SQLite as a backend database, task recur
 
 ![image](https://github.com/user-attachments/assets/f9a96f35-2792-4a4f-9569-35ab1a7a6889)
 
+# Documentation
 
 * [⚙️ Build](https://github.com/igorp74/ToDo.wiki.git)
 * [🎒 Help](https://github.com/igorp74/ToDo.wiki.git)
