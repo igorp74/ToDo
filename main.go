@@ -205,15 +205,13 @@ func main() {
             targetIDs = []int64{int64(*delID)} // Cast int to int64
         }
 
-        // If filters are present AND no specific IDs are given, or if filters are present and specific IDs are given,
-        // we need to confirm the deletion.
-        if hasFilters && (len(targetIDs) == 0 || !*delConfirm) {
+        // Confirmation logic: Show prompt if --confirm is NOT used AND (filters are present OR specific IDs are provided)
+        if !*delConfirm && (hasFilters || len(targetIDs) > 0) {
             // Get the count of tasks that would be affected by the filters
-            // This requires a temporary query similar to ListTasks
             tempIDs := getTaskIDsForDeletionConfirmation(tm, targetIDs, *delProject, *delTag, *delContext, *delStatus)
 
             if len(tempIDs) == 0 {
-                fmt.Println("No tasks found matching the specified filters. No tasks will be deleted.")
+                fmt.Println("No tasks found matching the specified criteria. No tasks will be deleted.")
                 return
             }
 
@@ -241,6 +239,7 @@ func main() {
                 return
             }
         } else if !hasFilters && len(targetIDs) == 0 {
+            // This block handles the case where no filters and no IDs are provided
             fmt.Println("At least one Task ID is required for 'del' command using -id or -ids, or provide filters.")
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
@@ -461,9 +460,9 @@ func getTaskIDsForDeletionConfirmation(tm *TodoManager, initialIDs []int64, proj
 // This function is now generic and can be used for tasks, notes, etc.
 func parseIDs(idStr string) ([]int64, error) {
     uniqueIDs := make(map[int64]bool)
-    parts := strings.SplitSeq(idStr, ",")
+    parts := strings.Split(idStr, ",")
 
-    for part := range parts {
+    for _, part := range parts {
         part = strings.TrimSpace(part)
         if part == "" {
             continue
@@ -638,10 +637,10 @@ func (p *Parser) Parse(args []string) error {
         isFlag := false
         var flagName string
 
-        if after, ok :=strings.CutPrefix(arg, "--"); ok  {
+        if after, ok := strings.CutPrefix(arg, "--"); ok {
             flagName = after
             isFlag = true
-        } else if after0, ok0 :=strings.CutPrefix(arg, "-"); ok0  {
+        } else if after0, ok0 := strings.CutPrefix(arg, "-"); ok0 {
             flagName = after0
             isFlag = true
         }
@@ -722,10 +721,10 @@ func (p *Parser) Parse(args []string) error {
         isFlag := false
         var flagName string
 
-        if after, ok :=strings.CutPrefix(arg, "--"); ok  {
+        if after, ok := strings.CutPrefix(arg, "--"); ok {
             flagName = after
             isFlag = true
-        } else if after0, ok0 :=strings.CutPrefix(arg, "-"); ok0  {
+        } else if after0, ok0 := strings.CutPrefix(arg, "-"); ok0 {
             flagName = after0
             isFlag = true
         }
@@ -871,4 +870,3 @@ func (p *Parser) Usage(err error) string {
     }
     return sb.String()
 }
-
