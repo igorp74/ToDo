@@ -2,6 +2,7 @@
 package main
 
 import (
+    "bufio"
     "database/sql" // Import sql for sql.NullInt64
     "fmt"
     "log"
@@ -34,10 +35,15 @@ func main() {
     addStatus := addCmd.String("status", "st", &Options{Default: "pending", Help: "Initial status of the task (pending, completed, cancelled, waiting)"})
 
     // Delete command
-    delCmd := parser.NewCommand("del", "Delete a task by ID.")
-    delIDs := delCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of tasks to delete (e.g., '1,2,3-5,10')"})
-    delID := delCmd.Int("id", "i", &Options{Help: "ID of a single task to delete (use -ids for multiple or ranges)"})
+    delCmd := parser.NewCommand("del", "Delete a task by ID, or filtered by project, tag, context, or status.")
+    delIDs := delCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of tasks to delete (e.g., '1,2,3-5,10'). If filters are used, applies to the filtered set."})
+    delID := delCmd.Int("id", "i", &Options{Help: "ID of a single task to delete (use -ids for multiple or ranges). If filters are used, applies to the filtered set."})
     delComplete := delCmd.Flag("complete", "C", &Options{Help: "Mark task as completed instead of deleting (for recurring tasks)"})
+    delProject := delCmd.String("project", "p", &Options{Help: "Filter tasks by project name before deletion"})
+    delContext := delCmd.String("context", "c", &Options{Help: "Filter tasks by context name before deletion"})
+    delTag := delCmd.String("tag", "T", &Options{Help: "Filter tasks by tag name before deletion"})
+    delStatus := delCmd.String("status", "st", &Options{Help: "Filter tasks by status (pending, completed, cancelled, waiting) before deletion"})
+    delConfirm := delCmd.Flag("confirm", "", &Options{Help: "Confirm deletion without prompt when using filters"})
 
     // Update command
     updateCmd := parser.NewCommand("update", "Update an existing task.")
@@ -120,6 +126,10 @@ func main() {
     holidayDelCmd := holidayCmd.NewCommand("del", "Delete one or more holidays by ID or delete all.") // Modified help text
     holidayDelIDs := holidayDelCmd.String("ids", "", &Options{Help: "Comma-separated IDs or ID ranges of holidays to delete (e.g., '1,2,3-5,10')"})
     holidayDelAll := holidayDelCmd.Flag("all", "", &Options{Help: "Delete all holidays"})
+    holidayUpdateCmd := holidayCmd.NewCommand("update", "Update an existing holiday.") // New subcommand
+    updateHolidayID := holidayUpdateCmd.Int("id", "i", &Options{Required: true, Help: "ID of the holiday to update"})
+    updateHolidayDate := holidayUpdateCmd.String("date", "d", &Options{Help: "New date of the holiday (YYYY-MM-DD). Use empty string with flag to clear."})
+    updateHolidayName := holidayUpdateCmd.String("name", "n", &Options{Help: "New name of the holiday. Use empty string with flag to clear."})
 
     // Working hours commands
     workhoursCmd := parser.NewCommand("workhours", "Manage working hours.")
@@ -180,6 +190,9 @@ func main() {
         )
     case delCmd.Parsed:
         var targetIDs []int64
+        // Check if any filtering flags are set
+        hasFilters := delCmd.GetFlag("project").IsSet || delCmd.GetFlag("tag").IsSet || delCmd.GetFlag("context").IsSet || delCmd.GetFlag("status").IsSet
+
         if *delIDs != "" {
             var parseErr error
             targetIDs, parseErr = parseIDs(*delIDs) // Use generic parseIDs
@@ -190,13 +203,51 @@ func main() {
             }
         } else if *delID != 0 {
             targetIDs = []int64{int64(*delID)} // Cast int to int64
-        } else {
-            fmt.Println("At least one Task ID is required for 'del' command using -id or -ids.")
+        }
+
+        // If filters are present AND no specific IDs are given, or if filters are present and specific IDs are given,
+        // we need to confirm the deletion.
+        if hasFilters && (len(targetIDs) == 0 || !*delConfirm) {
+            // Get the count of tasks that would be affected by the filters
+            // This requires a temporary query similar to ListTasks
+            tempIDs := getTaskIDsForDeletionConfirmation(tm, targetIDs, *delProject, *delTag, *delContext, *delStatus)
+
+            if len(tempIDs) == 0 {
+                fmt.Println("No tasks found matching the specified filters. No tasks will be deleted.")
+                return
+            }
+
+            fmt.Printf("You are about to delete/complete %d tasks matching the following criteria:\n", len(tempIDs))
+            if *delProject != "" {
+                fmt.Printf("  Project: %s\n", *delProject)
+            }
+            if *delContext != "" {
+                fmt.Printf("  Context: %s\n", *delContext)
+            }
+            if *delTag != "" {
+                fmt.Printf("  Tag: %s\n", *delTag)
+            }
+            if *delStatus != "" {
+                fmt.Printf("  Status: %s\n", *delStatus)
+            }
+            if len(targetIDs) > 0 {
+                fmt.Printf("  Specific IDs (intersected): %v\n", targetIDs)
+            }
+            fmt.Printf("Do you want to proceed? (yes/no): ")
+            reader := bufio.NewReader(os.Stdin)
+            response, _ := reader.ReadString('\n')
+            if strings.ToLower(strings.TrimSpace(response)) != "yes" {
+                fmt.Println("Deletion cancelled.")
+                return
+            }
+        } else if !hasFilters && len(targetIDs) == 0 {
+            fmt.Println("At least one Task ID is required for 'del' command using -id or -ids, or provide filters.")
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
-        // Call the new DeleteTasks method
-        tm.DeleteTasks(targetIDs, *delComplete)
+
+        // Call the modified DeleteTasks method with filters
+        tm.DeleteTasks(targetIDs, *delComplete, *delProject, *delTag, *delContext, *delStatus)
     case updateCmd.Parsed:
         var targetIDs []int64
         if *updateIDs != "" {
@@ -305,6 +356,14 @@ func main() {
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
+    case holidayUpdateCmd.Parsed: // New case for updating holidays
+        if *updateHolidayDate == "" && *updateHolidayName == "" {
+            fmt.Println("At least one of --date or --name must be provided for 'holiday update' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+        tm.UpdateHoliday(int64(*updateHolidayID), *updateHolidayDate, *updateHolidayName,
+            holidayUpdateCmd.GetFlag("date").IsSet, holidayUpdateCmd.GetFlag("name").IsSet)
     case workhoursSetCmd.Parsed:
         tm.SetWorkingHours(*workhoursSetDay, *workhoursSetStartHour, *workhoursSetStartMinute, *workhoursSetEndHour, *workhoursSetEndMinute, *workhoursSetBreakMinutes)
     case workhoursListCmd.Parsed:
@@ -340,14 +399,71 @@ func main() {
     }
 }
 
+// getTaskIDsForDeletionConfirmation is a helper to get task IDs based on filters for confirmation.
+func getTaskIDsForDeletionConfirmation(tm *TodoManager, initialIDs []int64, projectFilter, tagFilter, contextFilter, statusFilter string) []int64 {
+    query := `
+        SELECT t.id
+        FROM tasks t
+        LEFT JOIN projects p ON t.project_id = p.id
+    `
+    args := []any{}
+    whereClauses := []string{"1=1"}
+
+    if projectFilter != "" {
+        whereClauses = append(whereClauses, "p.name = ?")
+        args = append(args, projectFilter)
+    }
+    if statusFilter != "" && statusFilter != "all" {
+        whereClauses = append(whereClauses, "t.status = ?")
+        args = append(args, statusFilter)
+    }
+    if contextFilter != "" {
+        whereClauses = append(whereClauses, `EXISTS (SELECT 1 FROM task_contexts tc JOIN contexts c ON tc.context_id = c.id WHERE tc.task_id = t.id AND c.name = ?)`)
+        args = append(args, contextFilter)
+    }
+    if tagFilter != "" {
+        whereClauses = append(whereClauses, `EXISTS (SELECT 1 FROM task_tags tt JOIN tags tg ON tt.tag_id = tg.id WHERE tt.task_id = t.id AND tg.name = ?)`)
+        args = append(args, tagFilter)
+    }
+
+    if len(initialIDs) > 0 {
+        placeholders := make([]string, len(initialIDs))
+        for i := range initialIDs {
+            placeholders[i] = "?"
+            args = append(args, initialIDs[i])
+        }
+        whereClauses = append(whereClauses, fmt.Sprintf("t.id IN (%s)", strings.Join(placeholders, ",")))
+    }
+
+    query += " WHERE " + strings.Join(whereClauses, " AND ")
+
+    rows, err := tm.db.Query(query, args...)
+    if err != nil {
+        log.Printf("Error querying tasks for confirmation: %v", err)
+        return nil
+    }
+    defer rows.Close()
+
+    var ids []int64
+    for rows.Next() {
+        var id int64
+        if err := rows.Scan(&id); err != nil {
+            log.Printf("Error scanning task ID for confirmation: %v", err)
+            continue
+        }
+        ids = append(ids, id)
+    }
+    return ids
+}
+
 // parseIDs parses a comma-separated string of IDs and ID ranges
 // (e.g., "1,3-5,8") into a unique slice of int64 IDs.
 // This function is now generic and can be used for tasks, notes, etc.
 func parseIDs(idStr string) ([]int64, error) {
     uniqueIDs := make(map[int64]bool)
-    parts := strings.Split(idStr, ",")
+    parts := strings.SplitSeq(idStr, ",")
 
-    for _, part := range parts {
+    for part := range parts {
         part = strings.TrimSpace(part)
         if part == "" {
             continue
@@ -522,11 +638,11 @@ func (p *Parser) Parse(args []string) error {
         isFlag := false
         var flagName string
 
-        if strings.HasPrefix(arg, "--") {
-            flagName = strings.TrimPrefix(arg, "--")
+        if after, ok :=strings.CutPrefix(arg, "--"); ok  {
+            flagName = after
             isFlag = true
-        } else if strings.HasPrefix(arg, "-") {
-            flagName = strings.TrimPrefix(arg, "-")
+        } else if after0, ok0 :=strings.CutPrefix(arg, "-"); ok0  {
+            flagName = after0
             isFlag = true
         }
 
@@ -606,11 +722,11 @@ func (p *Parser) Parse(args []string) error {
         isFlag := false
         var flagName string
 
-        if strings.HasPrefix(arg, "--") {
-            flagName = strings.TrimPrefix(arg, "--")
+        if after, ok :=strings.CutPrefix(arg, "--"); ok  {
+            flagName = after
             isFlag = true
-        } else if strings.HasPrefix(arg, "-") {
-            flagName = strings.TrimPrefix(arg, "-")
+        } else if after0, ok0 :=strings.CutPrefix(arg, "-"); ok0  {
+            flagName = after0
             isFlag = true
         }
 

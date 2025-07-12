@@ -100,7 +100,7 @@ func (tm *TodoManager) initDB() {
 
     CREATE TABLE IF NOT EXISTS holidays (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL UNIQUE, --YYYY-MM-DD
+        date TEXT NOT NULL UNIQUE, -- YYYY-MM-DD
         name TEXT NOT NULL
     );
 
@@ -537,14 +537,83 @@ func (tm *TodoManager) DeleteTask(id int64, completeInstead bool) {
     }
 }
 
-// DeleteTasks deletes multiple tasks by a slice of IDs.
-func (tm *TodoManager) DeleteTasks(ids []int64, completeInstead bool) {
-    if len(ids) == 0 {
-        fmt.Println("No task IDs provided for deletion.")
+// DeleteTasks deletes multiple tasks by a slice of IDs, optionally filtered by project, tag, context, or status.
+// If filters are provided, it deletes tasks matching those filters. If IDs are also provided, it deletes the intersection.
+func (tm *TodoManager) DeleteTasks(ids []int64, completeInstead bool, projectFilter, tagFilter, contextFilter, statusFilter string) {
+    var tasksToDelete []int64
+
+    // If filters are provided, first get the IDs of tasks matching the filters
+    if projectFilter != "" || tagFilter != "" || contextFilter != "" || statusFilter != "" {
+        query := `
+            SELECT t.id
+            FROM tasks t
+            LEFT JOIN projects p ON t.project_id = p.id
+        `
+        args := []any{}
+        whereClauses := []string{"1=1"} // Start with a true condition to simplify AND logic
+
+        if projectFilter != "" {
+            whereClauses = append(whereClauses, "p.name = ?")
+            args = append(args, projectFilter)
+        }
+        if statusFilter != "" && statusFilter != "all" {
+            whereClauses = append(whereClauses, "t.status = ?")
+            args = append(args, statusFilter)
+        }
+        if contextFilter != "" {
+            whereClauses = append(whereClauses, `EXISTS (SELECT 1 FROM task_contexts tc JOIN contexts c ON tc.context_id = c.id WHERE tc.task_id = t.id AND c.name = ?)`)
+            args = append(args, contextFilter)
+        }
+        if tagFilter != "" {
+            whereClauses = append(whereClauses, `EXISTS (SELECT 1 FROM task_tags tt JOIN tags tg ON tt.tag_id = tg.id WHERE tt.task_id = t.id AND tg.name = ?)`)
+            args = append(args, tagFilter)
+        }
+
+        query += " WHERE " + strings.Join(whereClauses, " AND ")
+
+        rows, err := tm.db.Query(query, args...)
+        if err != nil {
+            log.Fatalf("Error querying tasks for filtered deletion: %v", err)
+        }
+        defer rows.Close()
+
+        filteredIDs := make(map[int64]bool)
+        for rows.Next() {
+            var id int64
+            if err := rows.Scan(&id); err != nil {
+                log.Printf("Error scanning task ID for filtered deletion: %v", err)
+                continue
+            }
+            filteredIDs[id] = true
+        }
+
+        // If specific IDs were also provided, take the intersection
+        if len(ids) > 0 {
+            for _, id := range ids {
+                if filteredIDs[id] {
+                    tasksToDelete = append(tasksToDelete, id)
+                }
+            }
+        } else {
+            // If no specific IDs, but filters are present, delete all filtered tasks
+            for id := range filteredIDs {
+                tasksToDelete = append(tasksToDelete, id)
+            }
+        }
+    } else {
+        // If no filters, just use the provided IDs
+        tasksToDelete = ids
+    }
+
+    if len(tasksToDelete) == 0 {
+        fmt.Println("No tasks found matching the criteria for deletion.")
         return
     }
 
-    for _, id := range ids {
+    // Sort tasksToDelete for consistent output, though not strictly necessary for functionality
+    // sort.Slice(tasksToDelete, func(i, j int) bool { return tasksToDelete[i] < tasksToDelete[j] })
+
+    for _, id := range tasksToDelete {
         tm.DeleteTask(id, completeInstead) // Reuse the single task delete logic
     }
 }
@@ -950,7 +1019,7 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                     "Sat": time.Saturday,
                 }
                 // Iterate over comma-separated day/range strings
-                for _, part := range strings.Split(recurrenceParts[1], ",") {
+                for part := range strings.SplitSeq(recurrenceParts[1], ",") {
                     part = strings.TrimSpace(part)
                     if strings.Contains(part, "-") {
                         // Handle ranges like "Mon-Wed"
@@ -1003,22 +1072,22 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
                     for i := 1; i <= 7*int(interval); i++ { // Check up to interval weeks ahead
                         tempDate := nextStartDate.AddDate(0, 0, i)
                         if slices.Contains(daysOfWeek, tempDate.Weekday()) {
-                                nextStartDate = tempDate
-                                // Adjust due and end dates to maintain the original duration from the new start date
-                                if currentTask.DueDate.Valid {
-                                    nextDueDate = nextStartDate.Add(currentTask.DueDate.Time.Sub(currentTask.StartDate.Time))
-                                }
-                                if currentTask.EndDate.Valid {
-                                    nextEndDate = nextStartDate.Add(currentTask.EndDate.Time.Sub(currentTask.StartDate.Time))
-                                }
-                                if isNextStartWaitingSet {
-                                    nextStartWaitingDate = nextStartDate.Add(currentTask.StartWaitingDate.Time.Sub(currentTask.StartDate.Time))
-                                }
-                                if isNextEndWaitingSet {
-                                    nextEndWaitingDate = nextStartDate.Add(currentTask.EndWaitingDate.Time.Sub(currentTask.StartDate.Time))
-                                }
-                                foundNextDate = true
+                            nextStartDate = tempDate
+                            // Adjust due and end dates to maintain the original duration from the new start date
+                            if currentTask.DueDate.Valid {
+                                nextDueDate = nextStartDate.Add(currentTask.DueDate.Time.Sub(currentTask.StartDate.Time))
                             }
+                            if currentTask.EndDate.Valid {
+                                nextEndDate = nextStartDate.Add(currentTask.EndDate.Time.Sub(currentTask.StartDate.Time))
+                            }
+                            if isNextStartWaitingSet {
+                                nextStartWaitingDate = nextStartDate.Add(currentTask.StartWaitingDate.Time.Sub(currentTask.StartDate.Time))
+                            }
+                            if isNextEndWaitingSet {
+                                nextEndWaitingDate = nextStartDate.Add(currentTask.EndWaitingDate.Time.Sub(currentTask.StartDate.Time))
+                            }
+                            foundNextDate = true
+                        }
                         if foundNextDate {
                             break
                         }
@@ -1148,6 +1217,47 @@ func (tm *TodoManager) AddHoliday(date, name string) {
         log.Fatalf("Error adding holiday: %v", err)
     }
     fmt.Printf("Holiday '%s' on %s added successfully.\n", name, date)
+}
+
+// UpdateHoliday updates an existing holiday by its ID.
+func (tm *TodoManager) UpdateHoliday(id int64, newDate, newName string, isDateSet, isNameSet bool) {
+    updates := []string{}
+    args := []any{}
+
+    if !isDateSet && !isNameSet {
+        fmt.Printf("No update parameters provided for holiday ID %d.\n", id)
+        return
+    }
+
+    if isDateSet {
+        parsedDate, err := ParseDateTime(newDate, nil)
+        if err != nil {
+            log.Fatalf("Invalid new holiday date format for ID %d: %v", id, err)
+        }
+        updates = append(updates, "date = ?")
+        args = append(args, parsedDate.Time.Format("2006-01-02"))
+    }
+    if isNameSet {
+        updates = append(updates, "name = ?")
+        args = append(args, newName)
+    }
+
+    updateQuery := fmt.Sprintf("UPDATE holidays SET %s WHERE id = ?", strings.Join(updates, ", "))
+    args = append(args, id)
+
+    res, err := tm.db.Exec(updateQuery, args...)
+    if err != nil {
+        log.Fatalf("Error updating holiday %d: %v", id, err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Fatalf("Error checking rows affected for holiday update: %v", err)
+    }
+    if rowsAffected == 0 {
+        fmt.Printf("Holiday %d not found or values were not changed.\n", id)
+    } else {
+        fmt.Printf("Holiday %d updated successfully.\n", id)
+    }
 }
 
 // DeleteHoliday deletes a holiday by its ID.
@@ -1571,7 +1681,7 @@ func (tm *TodoManager) DeleteAllNotes() {
     if err != nil {
         log.Fatalf("Error checking rows affected for deleting all notes: %v", err)
     }
-    fmt.Printf("Deleted %d notes.\\n", rowsAffected)
+    fmt.Printf("Deleted %d notes.\n", rowsAffected)
     // Reset the auto-increment sequence for task_notes table
     _, err = tm.db.Exec("UPDATE sqlite_sequence SET seq = 0 WHERE name = 'task_notes'")
     if err != nil {
