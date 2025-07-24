@@ -1,5 +1,5 @@
 # ToDo
-Simple CLI app for task management with SQLite as a backend, task recurrence, unlimited notes and working hours duration.
+Simple CLI app for task management written in Golang with SQLite as a backend, task recurrence, unlimited notes and working hours duration.
 
 ![image](https://github.com/user-attachments/assets/f9a96f35-2792-4a4f-9569-35ab1a7a6889)
 
