@@ -16,7 +16,7 @@ OK, tasks can be displayed in 3 format:
 
 ### Default
 
-this format shows all relevant data related to tasks formated to be functional and logical
+this format shows all relevant data related to tasks and formated to be functional and logical
 
 ![image](https://github.com/user-attachments/assets/f8a5bfe5-8617-4e0e-b590-588f96d4e214)
 
@@ -27,9 +27,9 @@ Keeps more relevant details about tasks, and hide details like start - end times
 ![image](https://github.com/user-attachments/assets/954ce171-6328-4add-8ac0-0655af542575)
 
 ### Minimal
-this one is suitable for large number of tasks overview, only task titles and projects related
+this one is suitable for big overwiev of large number of tasks, with start time, duration, project and task titles.
 
-![image](https://github.com/user-attachments/assets/2279fbf5-f1d3-4389-8c15-a199ce77fa2e)
+<img width="914" height="290" alt="image" src="https://github.com/user-attachments/assets/e61df692-d227-4877-ace4-a9ffb380e820" />
 
 
 ## Durations
