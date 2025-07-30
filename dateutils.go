@@ -61,16 +61,16 @@ func FormatDuration(d time.Duration) string { // Renamed to FormatDuration
 
     parts := []string{}
     if days > 0 {
-        parts = append(parts, fmt.Sprintf("%dd", days))
+        parts = append(parts, fmt.Sprintf("%02dd", days))
     }
     if hours > 0 {
-        parts = append(parts, fmt.Sprintf("%dh", hours))
+        parts = append(parts, fmt.Sprintf("%02dh", hours))
     }
     if minutes > 0 {
-        parts = append(parts, fmt.Sprintf("%dm", minutes))
+        parts = append(parts, fmt.Sprintf("%02dm", minutes))
     }
     if seconds > 0 {
-        parts = append(parts, fmt.Sprintf("%ds", seconds))
+        parts = append(parts, fmt.Sprintf("%02ds", seconds))
     }
 
     return strings.Join(parts, " ") // Join with space for shorter output
@@ -127,6 +127,17 @@ func FormatDisplayDateTime(nt NullableTime) string { // Changed to accept Nullab
     t := nt.Time.Local()
     dayAbbr := t.Format("Mon")
     formattedTime := t.Format("2006-01-02 15:04:05")
+    return fmt.Sprintf("%s %s", dayAbbr, formattedTime)
+}
+
+func FormatDisplayDate(nt NullableTime) string { // Changed to accept NullableTime
+    if !nt.Valid {
+        return "N/A" // Consistent with other "N/A" for invalid dates
+    }
+    // Convert UTC time to local time for display
+    t := nt.Time.Local()
+    dayAbbr := t.Format("Mon")
+    formattedTime := t.Format("2006-01-02")
     return fmt.Sprintf("%s %s", dayAbbr, formattedTime)
 }
 

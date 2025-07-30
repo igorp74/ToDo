@@ -210,7 +210,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
     switch format {
     case DisplayMinimal:
         fmt.Println("----------------------------------------------------------------------------------------------------------------")
-        fmt.Printf("%-5s    %-23s  %-20s %-80s\n", "ID", "Created", "Project", "Title")
+        fmt.Printf("%-5s    %-13s   %-16s  %-20s %-80s\n", "ID", "Start", "Duration", "Project", "Title")
         fmt.Println("----------------------------------------------------------------------------------------------------------------")
     }
 
@@ -241,16 +241,16 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         task.EndWaitingDate = NullableTime{Time: endWaitingDate.Time, Valid: endWaitingDate.Valid}
         task.OriginalTaskID = originalTaskID
 
-        var createdAt NullableTime
-        if createdAtStr.Valid {
-            // Parse the string into NullableTime
-            parsedCreatedAt, parseErr := ParseDateTime(createdAtStr.String, time.UTC) // Assume UTC for DB-stored timestamps
-            if parseErr != nil {
-                log.Printf("Warning: Could not parse created_at timestamp '%s' for task %d: %v", createdAtStr.String, task.ID, parseErr)
-            } else {
-                createdAt = parsedCreatedAt
-            }
-        }
+        // var createdAt NullableTime
+        // if createdAtStr.Valid {
+        //     // Parse the string into NullableTime
+        //     parsedCreatedAt, parseErr := ParseDateTime(createdAtStr.String, time.UTC) // Assume UTC for DB-stored timestamps
+        //     if parseErr != nil {
+        //         log.Printf("Warning: Could not parse created_at timestamp '%s' for task %d: %v", createdAtStr.String, task.ID, parseErr)
+        //     } else {
+        //         createdAt = parsedCreatedAt
+        //     }
+        // }
 
         // Fetch contexts and tags
         task.Contexts = tm.GetTaskNames(int64(task.ID), "task_contexts", "contexts")
@@ -460,7 +460,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                     note := task.Notes[j]
                     if note.Timestamp.Valid && note.Description.Valid {
                         // Changed to display actual note.ID instead of a calculated display ID
-                        sb.WriteString(fmt.Sprintf("         %-5d %s%s%s%s: %s%s%s\n", note.ID, style_italic, fg_green, FormatDisplayDateTime(note.Timestamp), style_reset, fg_yellow, note.Description.String, style_reset))
+                        sb.WriteString(fmt.Sprintf("         %-5d %s%s%s%s  %s%s%s\n", note.ID, style_italic, fg_green, FormatDisplayDateTime(note.Timestamp), style_reset, fg_yellow, note.Description.String, style_reset))
                     }
                 }
             }
@@ -578,10 +578,12 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 status_str = "⏸️"
             }
 
-            fmt.Printf("%-5d%s  %-23s  %s%-20s%s %s%-80s%s\n",
+            fmt.Printf("%-5d%s  %-13s  %s%s%-16s%s  %s%-20s%s %s%-80s%s \n",
                 task.ID,
                 status_str,
-                FormatDisplayDateTime(createdAt),
+                // FormatDisplayDateTime(createdAt),
+                FormatDisplayDate(task.StartDate),
+                fg_blue, style_bold, totalDurationStr, style_reset,
                 fg_green, task.ProjectName.String, style_reset,
                 style_bold, task.Title, style_reset)
         }
