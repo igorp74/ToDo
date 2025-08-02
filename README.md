@@ -34,5 +34,4 @@ for all features and commands, please read the documentation
 # Documentation
 * [⚙️ Build](https://github.com/igorp74/ToDo/blob/31a550724265feef8abb814187c812d017a0189f/Documentation/Build.md)
 * [🎒 Help](https://github.com/igorp74/ToDo/blob/31a550724265feef8abb814187c812d017a0189f/Documentation/Help.md)
-* [🎬 Examples](https://github.com/igorp74/ToDo/blob/31a550724265feef8abb814187c812d017a0189f/Documentation/Examples.md)
-
+* [🎬 Examples](https://github.com/igorp74/ToDo/wiki/%F0%9F%8E%AC-Examples)
