@@ -32,6 +32,6 @@ Simple CLI app for task management written in Golang with SQLite as a backend, t
 for all features and commands, please read the documentation
 
 # Documentation
-* [⚙️ Build](https://github.com/igorp74/ToDo/blob/31a550724265feef8abb814187c812d017a0189f/Documentation/Build.md)
-* [🎒 Help](https://github.com/igorp74/ToDo/blob/31a550724265feef8abb814187c812d017a0189f/Documentation/Help.md)
+* [⚙️ Build](https://github.com/igorp74/ToDo/wiki/%E2%9A%99%EF%B8%8F-BUILD)
+* [🎒 Help](https://github.com/igorp74/ToDo/wiki/%F0%9F%8E%92-HELP)
 * [🎬 Examples](https://github.com/igorp74/ToDo/wiki/%F0%9F%8E%AC-Examples)
