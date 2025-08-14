@@ -42,7 +42,12 @@ func ParseDateTime(dateTimeStr string, loc *time.Location) (NullableTime, error)
 
 // FormatDuration formats a time.Duration into a human-readable string (days, hours, minutes, seconds),
 // skipping any components that are zero. This is for general calendar duration.
-func FormatDuration(d time.Duration) string { // Renamed to FormatDuration
+// TimeFormatMode:
+// 0 = no zeros in format
+// 1 = 02d format
+// there could be defined as many modes as someone need for different formatting...
+
+func FormatDuration(d time.Duration, TimeFormatMode int) string {
     totalSeconds := int(d.Seconds())
     if totalSeconds == 0 {
         return "0s" // Changed to a shorter format for minimal display
@@ -61,24 +66,52 @@ func FormatDuration(d time.Duration) string { // Renamed to FormatDuration
 
     parts := []string{}
     if days > 0 {
-        parts = append(parts, fmt.Sprintf("%02dd", days))
-        // parts = append(parts, fmt.Sprintf("%s%s%02d%sd%s", fg_red, style_bold, days, style_reset, style_reset))
-        // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sd%s", fg_red, style_bold, days, style_reset, fg_red, style_reset))
+        if TimeFormatMode == 0 {
+            parts = append(parts, fmt.Sprintf("%dd", days))
+        } else {
+            parts = append(parts, fmt.Sprintf("%02dd", days))
+            // parts = append(parts, fmt.Sprintf("%s%s%02d%sd%s", fg_red, style_bold, days, style_reset, style_reset))
+            // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sd%s", fg_red, style_bold, days, style_reset, fg_red, style_reset))
+        }
+    } else {
+        if TimeFormatMode == 1 {
+            parts = append(parts, "   ")
+        }
     }
     if hours > 0 {
-        parts = append(parts, fmt.Sprintf("%02dh", hours))
-        // parts = append(parts, fmt.Sprintf("%s%s%02d%sh%s", fg_red, style_bold, hours, style_reset, style_reset))
-        // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sh%s", fg_red, style_bold, hours, style_reset, fg_red, style_reset))
+        if TimeFormatMode == 0 {
+            parts = append(parts, fmt.Sprintf("%dh", hours))
+        } else {
+            parts = append(parts, fmt.Sprintf("%02dh", hours))
+            // parts = append(parts, fmt.Sprintf("%s%s%02d%sh%s", fg_red, style_bold, hours, style_reset, style_reset))
+            // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sh%s", fg_red, style_bold, hours, style_reset, fg_red, style_reset))
+            }
+    } else {
+        if TimeFormatMode == 1 {
+            parts = append(parts, "   ")
+        }
     }
     if minutes > 0 {
-        parts = append(parts, fmt.Sprintf("%02dm", minutes))
-        // parts = append(parts, fmt.Sprintf("%s%s%02d%sm%s", fg_red, style_bold, minutes, style_reset, style_reset))
-        // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sm%s", fg_red, style_bold, minutes, style_reset, fg_red, style_reset))
+        if TimeFormatMode == 0 {
+            parts = append(parts, fmt.Sprintf("%dm", minutes))
+        } else {
+            parts = append(parts, fmt.Sprintf("%02dm", minutes))
+            // parts = append(parts, fmt.Sprintf("%s%s%02d%sm%s", fg_red, style_bold, minutes, style_reset, style_reset))
+            // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sm%s", fg_red, style_bold, minutes, style_reset, fg_red, style_reset))
+        }
+    } else {
+        if TimeFormatMode == 1 {
+            parts = append(parts, "   ")
+        }
     }
     if seconds > 0 {
-        parts = append(parts, fmt.Sprintf("%02ds", seconds))
-        // parts = append(parts, fmt.Sprintf("%s%s%02d%ss%s", fg_red, style_bold, seconds, style_reset, style_reset))
-        // parts = append(parts, fmt.Sprintf("%s%s%02d%s%ss%s", fg_red, style_bold, seconds, style_reset, fg_red, style_reset))
+        if TimeFormatMode == 0 {
+            parts = append(parts, fmt.Sprintf("%ds", seconds))
+        } else {
+            parts = append(parts, fmt.Sprintf("%02ds", seconds))
+            // parts = append(parts, fmt.Sprintf("%s%s%02d%ss%s", fg_red, style_bold, seconds, style_reset, style_reset))
+            // parts = append(parts, fmt.Sprintf("%s%s%02d%s%ss%s", fg_red, style_bold, seconds, style_reset, fg_red, style_reset))
+        }
     }
 
     return strings.Join(parts, " ") // Join with space for shorter output
@@ -87,7 +120,7 @@ func FormatDuration(d time.Duration) string { // Renamed to FormatDuration
 // FormatWorkingHoursDisplay formats a time.Duration into a human-readable string
 // specifically for working hours, assuming an 8-hour working day for 'days' calculation.
 // It skips any components that are zero.
-func FormatWorkingHoursDisplay(d time.Duration) string { // Renamed to FormatWorkingHoursDisplay
+func FormatWorkingHoursDisplay(d time.Duration) string {
     totalSeconds := int(d.Seconds())
     if totalSeconds == 0 {
         return "0s" // Changed to a shorter format for minimal display

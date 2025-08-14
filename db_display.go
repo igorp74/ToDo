@@ -274,7 +274,8 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         }
 
         // Calculate Duration and Working Hours Duration
-        totalDurationStr := "N/A"
+        totalDurationStr   := "N/A"
+        totalDurationStr2  := "N/A"
         workingDurationStr := "N/A"
         waitingDurationStr := "N/A"
         waitingWorkingDurationStr := "N/A"
@@ -283,7 +284,8 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         if task.StartDate.Valid {
             if task.Status == "completed" && task.EndDate.Valid {
                 totalDuration := CalculateCalendarDuration(task)
-                totalDurationStr = FormatDuration(totalDuration)
+                totalDurationStr  = FormatDuration(totalDuration,0)
+                totalDurationStr2 = FormatDuration(totalDuration,1)
 
                 workingDuration := tm.CalculateWorkingDuration(task.StartDate, task.EndDate, workingHours, holidaysMap)
                 workingDurationStr = FormatWorkingHoursDisplay(workingDuration)
@@ -291,7 +293,8 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 tempTask := task
                 tempTask.EndDate = NullableTime{Time: time.Now().UTC(), Valid: true}
                 totalDuration := CalculateCalendarDuration(tempTask)
-                totalDurationStr = FormatDuration(totalDuration)
+                totalDurationStr  = FormatDuration(totalDuration,0)
+                totalDurationStr2 = FormatDuration(totalDuration,1)
 
                 workingDuration := tm.CalculateWorkingDuration(task.StartDate, NullableTime{Time: time.Now().UTC(), Valid: true}, workingHours, holidaysMap)
                 workingDurationStr = FormatWorkingHoursDisplay(workingDuration)
@@ -302,15 +305,15 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         if task.DueDate.Valid {
             diffDuration, isOverdue := CalculateTimeDifference(task.DueDate)
             if isOverdue {
-                timeToDueStr = fmt.Sprintf("(%s%s%s%s overdue)",   style_bold, fg_red,  FormatDuration(diffDuration), style_reset)
+                timeToDueStr = fmt.Sprintf("(%s%s%s%s overdue)",   style_bold, fg_red,  FormatDuration(diffDuration,0), style_reset)
             } else {
-                timeToDueStr = fmt.Sprintf("%s(%s%s%s remaining)", style_bold, fg_cyan, FormatDuration(diffDuration), style_reset)
+                timeToDueStr = fmt.Sprintf("(%s%s%s%s remaining)", style_bold, fg_cyan, FormatDuration(diffDuration,0), style_reset)
             }
         }
 
         // Calculate waiting duration (calendar time)
         waitingDuration := CalculateWaitingDuration(task)
-        waitingDurationStr = FormatDuration(waitingDuration)
+        waitingDurationStr = FormatDuration(waitingDuration,0)
 
         // Calculate working hours within the waiting period
         if task.StartWaitingDate.Valid && task.EndWaitingDate.Valid {
@@ -382,11 +385,12 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             //     timeParts = append(timeParts, "✨ Added: "+FormatDisplayDateTime(createdAt))
             // }
             if task.DueDate.Valid {
-                timeParts = append(timeParts, "⏰ Due:   "+FormatDisplayDateTime(task.DueDate))
+                timeParts = append(timeParts, "⏰ Due:   " + FormatDisplayDateTime(task.DueDate))
             }
             if task.DueDate.Valid {
                 timeParts = append(timeParts, timeToDueStr)
             }
+
             if len(timeParts) > 0 {
                 sb.WriteString(fmt.Sprintf("      %s\n", strings.Join(timeParts, " | ")))
             }
@@ -408,10 +412,10 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             dateParts := []string{}
 
             if task.StartDate.Valid {
-                dateParts = append(dateParts, "🚀 Start: "+FormatDisplayDateTime(task.StartDate))
+                dateParts = append(dateParts, "🚀 Start: " + FormatDisplayDateTime(task.StartDate))
             }
             if task.EndDate.Valid {
-                dateParts = append(dateParts, "🏁 End: "+FormatDisplayDateTime(task.EndDate))
+                dateParts = append(dateParts, "🏁 End: " + FormatDisplayDateTime(task.EndDate))
             }
             if len(totalDurationStr) > 0 && totalDurationStr != "N/A" {
                 dateParts = append(dateParts, "(" + fg_green + totalDurationStr + style_reset + ")")
@@ -442,10 +446,10 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
 
             durationParts := []string{}
             if workingDurationStr != "0s" && workingDurationStr != "N/A" {
-                durationParts = append(durationParts, "⏳ Working: "+style_bold+fg_green+" "+workingDurationStr+" "+style_reset)
+                durationParts = append(durationParts, "⏳ Working: " + style_bold + fg_green + workingDurationStr + style_reset)
             }
             if waitingWorkingDurationStr != "0s" && waitingWorkingDurationStr != "N/A"  { // Only add if there's a non-zero waiting working duration
-                durationParts = append(durationParts, "🚧 Waiting: "+fg_red+waitingWorkingDurationStr+style_reset)
+                durationParts = append(durationParts, "🚧 Waiting: " + fg_red + waitingWorkingDurationStr + style_reset)
             }
 
             if len(durationParts) > 0 {
@@ -587,7 +591,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 status_str,
                 // FormatDisplayDateTime(createdAt),
                 FormatDisplayDate(task.StartDate),
-                fg_blue, style_bold, totalDurationStr, style_reset,
+                fg_blue, style_bold, totalDurationStr2, style_reset,
                 fg_green, task.ProjectName.String, style_reset,
                 style_bold, task.Title, style_reset)
         }
