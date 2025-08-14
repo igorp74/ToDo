@@ -62,15 +62,23 @@ func FormatDuration(d time.Duration) string { // Renamed to FormatDuration
     parts := []string{}
     if days > 0 {
         parts = append(parts, fmt.Sprintf("%02dd", days))
+        // parts = append(parts, fmt.Sprintf("%s%s%02d%sd%s", fg_red, style_bold, days, style_reset, style_reset))
+        // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sd%s", fg_red, style_bold, days, style_reset, fg_red, style_reset))
     }
     if hours > 0 {
         parts = append(parts, fmt.Sprintf("%02dh", hours))
+        // parts = append(parts, fmt.Sprintf("%s%s%02d%sh%s", fg_red, style_bold, hours, style_reset, style_reset))
+        // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sh%s", fg_red, style_bold, hours, style_reset, fg_red, style_reset))
     }
     if minutes > 0 {
         parts = append(parts, fmt.Sprintf("%02dm", minutes))
+        // parts = append(parts, fmt.Sprintf("%s%s%02d%sm%s", fg_red, style_bold, minutes, style_reset, style_reset))
+        // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sm%s", fg_red, style_bold, minutes, style_reset, fg_red, style_reset))
     }
     if seconds > 0 {
         parts = append(parts, fmt.Sprintf("%02ds", seconds))
+        // parts = append(parts, fmt.Sprintf("%s%s%02d%ss%s", fg_red, style_bold, seconds, style_reset, style_reset))
+        // parts = append(parts, fmt.Sprintf("%s%s%02d%s%ss%s", fg_red, style_bold, seconds, style_reset, fg_red, style_reset))
     }
 
     return strings.Join(parts, " ") // Join with space for shorter output

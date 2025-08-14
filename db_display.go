@@ -302,9 +302,9 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         if task.DueDate.Valid {
             diffDuration, isOverdue := CalculateTimeDifference(task.DueDate)
             if isOverdue {
-                timeToDueStr = fmt.Sprintf(" (%s%s%s overdue)", fg_red, FormatDuration(diffDuration), style_reset)
+                timeToDueStr = fmt.Sprintf("(%s%s%s%s overdue)",   style_bold, fg_red,  FormatDuration(diffDuration), style_reset)
             } else {
-                timeToDueStr = fmt.Sprintf(" (%s%s%s remaining)", fg_cyan, FormatDuration(diffDuration), style_reset)
+                timeToDueStr = fmt.Sprintf("%s(%s%s%s remaining)", style_bold, fg_cyan, FormatDuration(diffDuration), style_reset)
             }
         }
 
@@ -328,13 +328,13 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             status_str := ""
             switch task.Status {
             case "pending":
-                status_str = style_bold + fg_yellow + "pending" + style_reset
+                status_str = style_bold + fg_yellow + "pending"   + style_reset
             case "completed":
-                status_str = style_bold + fg_green + "completed" + style_reset
+                status_str = style_bold + fg_green  + "completed" + style_reset
             case "cancelled":
-                status_str = style_bold + fg_red + "canceled" + style_reset
+                status_str = style_bold + fg_red    + "canceled"  + style_reset
             case "waiting":
-                status_str = style_bold + fg_blue + "waiting" + style_reset
+                status_str = style_bold + fg_blue   + "waiting"   + style_reset
             }
             titleParts = append(titleParts, status_str)
 
@@ -343,12 +343,12 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 if task.RecurrenceInterval.Valid {
                     interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
                 }
-                titleParts = append(titleParts, "🔄 "+fg_blue+task.Recurrence.String+interval+style_reset)
+                titleParts = append(titleParts, "🔄 " + fg_blue + task.Recurrence.String + interval + style_reset)
 
             }
-            if task.DueDate.Valid {
-                titleParts = append(titleParts, style_bold+timeToDueStr+style_reset)
-            }
+            // if task.DueDate.Valid {
+            //     titleParts = append(titleParts, timeToDueStr)
+            // }
 
             sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " | ")))
 
@@ -384,7 +384,9 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             if task.DueDate.Valid {
                 timeParts = append(timeParts, "⏰ Due:   "+FormatDisplayDateTime(task.DueDate))
             }
-
+            if task.DueDate.Valid {
+                timeParts = append(timeParts, timeToDueStr)
+            }
             if len(timeParts) > 0 {
                 sb.WriteString(fmt.Sprintf("      %s\n", strings.Join(timeParts, " | ")))
             }
@@ -477,33 +479,35 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             status_str := ""
             switch task.Status {
             case "pending":
-                status_str = "🚀"
+                status_str = style_bold + fg_yellow + "pending"   + style_reset
             case "completed":
-                status_str = "✅"
+                status_str = style_bold + fg_green  + "completed" + style_reset
             case "cancelled":
-                status_str = "❌"
+                status_str = style_bold + fg_red    + "canceled"  + style_reset
             case "waiting":
-                status_str = "⏸️"
+                status_str = style_bold + fg_blue   + "waiting"   + style_reset
             }
+            titleParts = append(titleParts, style_bold + task.Title + style_reset)
             titleParts = append(titleParts, status_str)
-            titleParts = append(titleParts, style_bold+task.Title+style_reset)
             if task.Recurrence.Valid {
                 interval := ""
                 if task.RecurrenceInterval.Valid {
                     interval = fmt.Sprintf(" every %d", task.RecurrenceInterval.Int64)
                 }
-                titleParts = append(titleParts, "  🔄 "+fg_blue+task.Recurrence.String+interval+style_reset)
+                titleParts = append(titleParts, "🔄 " + fg_blue + task.Recurrence.String + interval + style_reset)
 
             }
             if task.DueDate.Valid {
-                titleParts = append(titleParts, style_bold+timeToDueStr+style_reset)
+                titleParts = append(titleParts, timeToDueStr)
             }
 
-            sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " ")))
+            sb.WriteString(fmt.Sprintf(" %s\n", strings.Join(titleParts, " | ")))
+
+
 
 
             if task.Description.Valid && task.Description.String != "" {
-                sb.WriteString(fmt.Sprintf("         %s%s%s%s\n", style_italic, fg_yellow, task.Description.String, style_reset))
+                sb.WriteString(fmt.Sprintf("      %s%s%s%s\n", style_italic, fg_yellow, task.Description.String, style_reset))
             }
 
 
@@ -529,7 +533,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 projectParts = append(projectParts, fg_magenta+strings.Join(task.Contexts, ", ")+style_reset)
             }
             if len(projectParts) > 0 {
-                sb.WriteString(fmt.Sprintf("         %s\n", strings.Join(projectParts, " | ")))
+                sb.WriteString(fmt.Sprintf("      %s\n", strings.Join(projectParts, " | ")))
             }
 
 
@@ -578,8 +582,8 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
                 status_str = "⏸️"
             }
 
-            fmt.Printf("%-5d%s  %-13s  %s%s%-16s%s  %s%-20s%s %s%-80s%s \n",
-                task.ID,
+            fmt.Printf("%s%-5d%s%s  %-13s  %s%s%-16s%s  %s%-20s%s %s%-80s%s \n",
+                fg_red, task.ID, style_reset,
                 status_str,
                 // FormatDisplayDateTime(createdAt),
                 FormatDisplayDate(task.StartDate),
