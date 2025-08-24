@@ -34,5 +34,5 @@ for all features and commands, please read the documentation
 
 # Documentation
 * [⚙️ Build](https://github.com/igorp74/ToDo/wiki/%E2%9A%99%EF%B8%8F-BUILD)
-* [🎒 Help](https://github.com/igorp74/ToDo/wiki/%F0%9F%8E%92-HELP)
+* [🚀 Usage](https://github.com/igorp74/ToDo/wiki/%F0%9F%9A%80-Usage)
 * [🎬 Examples](https://github.com/igorp74/ToDo/wiki/%F0%9F%8E%AC-Examples)
