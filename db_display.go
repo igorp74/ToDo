@@ -80,7 +80,7 @@ func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []
             placeholders[i] = "?"
             args = append(args, projectExcludeFilter[i])
         }
-        whereClauses = append(whereClauses, fmt.Sprintf("p.name NOT IN (%s)", strings.Join(placeholders, ",")))
+        whereClauses = append(whereClauses, fmt.Sprintf("( p.name NOT IN (%s) OR p.name is NULL) ", strings.Join(placeholders, ",")))
     }
 
     // Status filter
@@ -181,7 +181,7 @@ func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []
             placeholders[i] = "?"
             args = append(args, contextExcludeFilter[i])
         }
-        whereClauses = append(whereClauses, fmt.Sprintf("EXISTS (SELECT 1 FROM task_contexts tc JOIN contexts c ON tc.context_id = c.id WHERE tc.task_id = t.id AND c.name NOT IN (%s) )", strings.Join(placeholders, ",")))
+        whereClauses = append(whereClauses, fmt.Sprintf("EXISTS (SELECT 1 FROM task_contexts tc JOIN contexts c ON tc.context_id = c.id WHERE tc.task_id = t.id AND (c.name NOT IN (%s) OR c.name IS NULL) )", strings.Join(placeholders, ",")))
     }
 
     // Filter by specific tags
@@ -201,7 +201,7 @@ func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []
             placeholders[i] = "?"
             args = append(args, tagExcludeFilter[i])
         }
-        whereClauses = append(whereClauses, fmt.Sprintf("EXISTS (SELECT 1 FROM task_tags tt JOIN tags tg ON tt.tag_id = tg.id WHERE tt.task_id = t.id AND tg.name NOT IN (%s) )", strings.Join(placeholders, ",")))
+        whereClauses = append(whereClauses, fmt.Sprintf("EXISTS (SELECT 1 FROM task_tags tt JOIN tags tg ON tt.tag_id = tg.id WHERE tt.task_id = t.id AND (tg.name NOT IN (%s) OR tg.name IS NULL) )", strings.Join(placeholders, ",")))
     }
 
     // Combine all WHERE clauses
