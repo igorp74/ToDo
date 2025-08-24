@@ -67,10 +67,10 @@ func main() {
 
     updateClearProject       := updateCmd.Flag("clear-p"              , "cp", &Options{Help: "Clear project association"})
     updateClearContexts      := updateCmd.Flag("clear-c"              , "cc", &Options{Help: "Clear all context associations"})
-    updateClearTags          := updateCmd.Flag("clear-T"              , "ct", &Options{Help: "Clear all tag associations"})
+    updateClearTags          := updateCmd.Flag("clear-T"              , "cT", &Options{Help: "Clear all tag associations"})
     updateClearStart         := updateCmd.Flag("clear-s"              , "cs", &Options{Help: "Clear start date"})
-    updateClearDue           := updateCmd.Flag("clear-D"              , "cd", &Options{Help: "Clear due date"})
-    updateClearEnd           := updateCmd.Flag("clear-E"              , "ce", &Options{Help: "Clear end date"})
+    updateClearDue           := updateCmd.Flag("clear-D"              , "cD", &Options{Help: "Clear due date"})
+    updateClearEnd           := updateCmd.Flag("clear-E"              , "cE", &Options{Help: "Clear end date"})
     updateClearRecurrence    := updateCmd.Flag("clear-r"              , "cr", &Options{Help: "Clear recurrence"})
     updateClearWaiting       := updateCmd.Flag("clear-wait"           , "cw", &Options{Help: "Clear waiting period"})
 
@@ -91,7 +91,7 @@ func main() {
     deleteNoteIDs         := deleteNoteCmd.String("ids"        , "I" , &Options{Help: "Comma-separated IDs or ID ranges of notes to delete (e.g., '1,2,3-5,10')"})
     deleteNoteAll         := deleteNoteCmd.Flag("all"          , "a" , &Options{Help: "Delete all notes"})
     deleteNoteTaskID      := deleteNoteCmd.Int("task-id"       , "ti", &Options{Help: "ID of the task whose notes should be deleted"})
-    deleteNoteAllForTask  := deleteNoteCmd.Flag("all-for-task" , ""  , &Options{Help: "Delete all notes associated with the specified task ID"})
+    deleteNoteAllForTask  := deleteNoteCmd.Flag("all-for-task" , "ai"  , &Options{Help: "Delete all notes associated with the specified task ID"})
 
 
     // List command
