@@ -39,13 +39,8 @@ const (
     bg_white   = "\033[47m"
 )
 
-// ListTasks fetches and displays tasks based on filters and sorting.
-// Added endBefore and endAfter parameters for filtering by end date.
-// Added taskIDs for filtering by specific task IDs, and searchText for title/description/note search.
-func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusFilter, startBefore, startAfter, dueBefore, dueAfter, endBefore, endAfter, sortBy, order string, format int, displayNotes string, taskIDs []int64, searchText string) {
-    // Base query to select task details.
-    // LEFT JOIN is used for projects, and now for task_notes to allow searching within notes
-    // without requiring every task to have notes.
+// ListTasks
+func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []string, contextFilter []string, contextExcludeFilter []string, tagFilter []string, tagExcludeFilter []string, statusFilter, startBefore, startAfter, dueBefore, dueAfter, endBefore, endAfter, sortBy, order string, format int, displayNotes string, taskIDs []int64, searchText string) {
     query := `
         SELECT
             t.id, t.title, t.description, p.name, t.start_date, t.due_date, t.end_date, t.status,
@@ -53,7 +48,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             COALESCE(tm.created_at, t.start_date) as created_at_ts -- Get created_at from task_metadata or fallback to start_date
         FROM tasks t
         LEFT JOIN projects p ON t.project_id = p.id
-        LEFT JOIN task_metadata tm ON t.id = tm.task_id -- Join with new metadata table
+        LEFT JOIN task_metadata tm ON t.id = tm.task_id
     `
     args := []any{}
     whereClauses := []string{"1=1"} // Start with a true condition to simplify AND logic
@@ -68,10 +63,24 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         whereClauses = append(whereClauses, fmt.Sprintf("t.id IN (%s)", strings.Join(placeholders, ",")))
     }
 
-    // Project filter
-    if projectFilter != "" {
-        whereClauses = append(whereClauses, "p.name = ?")
-        args = append(args, projectFilter)
+    // Filter by specific projects
+    if len(projectFilter) > 0 {
+        placeholders := make([]string, len(projectFilter))
+        for i := range projectFilter {
+            placeholders[i] = "?"
+            args = append(args, projectFilter[i])
+        }
+        whereClauses = append(whereClauses, fmt.Sprintf("p.name IN (%s)", strings.Join(placeholders, ",")))
+    }
+
+    // Filter by specific excluded projects
+    if len(projectFilter) == 0 && len(projectExcludeFilter) > 0 {
+        placeholders := make([]string, len(projectExcludeFilter))
+        for i := range projectExcludeFilter {
+            placeholders[i] = "?"
+            args = append(args, projectExcludeFilter[i])
+        }
+        whereClauses = append(whereClauses, fmt.Sprintf("p.name NOT IN (%s)", strings.Join(placeholders, ",")))
     }
 
     // Status filter
@@ -132,7 +141,7 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
             args = append(args, sqlParsed)
         }
     }
-    // New: End Date filters
+    // End Date filters
     if endBefore != "" {
         parsed, err := ParseDateTime(endBefore, time.Local)
         if err != nil {
@@ -154,14 +163,45 @@ func ListTasks(tm *TodoManager, projectFilter, contextFilter, tagFilter, statusF
         }
     }
 
-    // Context and Tag filters (require JOINs and GROUP BY or EXISTS subqueries)
-    if contextFilter != "" {
-        whereClauses = append(whereClauses, `EXISTS (SELECT 1 FROM task_contexts tc JOIN contexts c ON tc.context_id = c.id WHERE tc.task_id = t.id AND c.name = ?)`)
-        args = append(args, contextFilter)
+
+    // Filter by specific contexts
+    if len(contextFilter) > 0 {
+        placeholders := make([]string, len(contextFilter))
+        for i := range contextFilter {
+            placeholders[i] = "?"
+            args = append(args, contextFilter[i])
+        }
+        whereClauses = append(whereClauses, fmt.Sprintf("EXISTS (SELECT 1 FROM task_contexts tc JOIN contexts c ON tc.context_id = c.id WHERE tc.task_id = t.id AND c.name IN (%s) )", strings.Join(placeholders, ",")))
     }
-    if tagFilter != "" {
-        whereClauses = append(whereClauses, `EXISTS (SELECT 1 FROM task_tags tt JOIN tags tg ON tt.tag_id = tg.id WHERE tt.task_id = t.id AND tg.name = ?)`)
-        args = append(args, tagFilter)
+
+    // Filter by specific excluded contexts
+    if len(contextFilter) == 0 && len(contextExcludeFilter) > 0 {
+        placeholders := make([]string, len(contextExcludeFilter))
+        for i := range contextExcludeFilter {
+            placeholders[i] = "?"
+            args = append(args, contextExcludeFilter[i])
+        }
+        whereClauses = append(whereClauses, fmt.Sprintf("EXISTS (SELECT 1 FROM task_contexts tc JOIN contexts c ON tc.context_id = c.id WHERE tc.task_id = t.id AND c.name NOT IN (%s) )", strings.Join(placeholders, ",")))
+    }
+
+    // Filter by specific tags
+    if len(tagFilter) > 0 {
+        placeholders := make([]string, len(tagFilter))
+        for i := range tagFilter {
+            placeholders[i] = "?"
+            args = append(args, tagFilter[i])
+        }
+        whereClauses = append(whereClauses, fmt.Sprintf("EXISTS (SELECT 1 FROM task_tags tt JOIN tags tg ON tt.tag_id = tg.id WHERE tt.task_id = t.id AND tg.name IN (%s) )", strings.Join(placeholders, ",")))
+    }
+
+    // Filter by specific excluded tags
+    if len(tagFilter) == 0 && len(tagExcludeFilter) > 0 {
+        placeholders := make([]string, len(tagExcludeFilter))
+        for i := range tagExcludeFilter {
+            placeholders[i] = "?"
+            args = append(args, tagExcludeFilter[i])
+        }
+        whereClauses = append(whereClauses, fmt.Sprintf("EXISTS (SELECT 1 FROM task_tags tt JOIN tags tg ON tt.tag_id = tg.id WHERE tt.task_id = t.id AND tg.name NOT IN (%s) )", strings.Join(placeholders, ",")))
     }
 
     // Combine all WHERE clauses
