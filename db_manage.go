@@ -186,6 +186,39 @@ func (tm *TodoManager) initDB() {
         log.Fatalf("Error creating trigger trg_tasks_after_insert: %v", err)
     }
 
+
+    // Add the trigger for cleaning task_tags table from deleted tag ids
+    trigger_del_tag := `
+    CREATE TRIGGER IF NOT EXISTS trg_task_tags_after_delete
+    AFTER DELETE ON tags
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM task_tags 
+        WHERE old.ID = tag_id;
+    END;
+    `
+    _, err = tm.db.Exec(trigger_del_tag)
+    if err != nil {
+        log.Fatalf("Error creating trigger trg_task_tags_after_delete: %v", err)
+    }
+
+
+    // Add the trigger for cleaning task_contexts from deleted context ids
+    trigger_del_context := `
+    CREATE TRIGGER IF NOT EXISTS trg_tasks_contexts_after_delete
+    AFTER DELETE ON contexts
+    FOR EACH ROW
+    BEGIN
+        DELETE FROM task_contexts
+        WHERE old.ID = context_id;
+    END;
+    `
+    _, err = tm.db.Exec(trigger_del_context)
+    if err != nil {
+        log.Fatalf("Error creating trigger trg_tasks_contexts_after_delete: %v", err)
+    }
+
+
     // Backfill task_metadata for old tasks
     tm.backfillTaskMetadata()
 }
@@ -1702,3 +1735,311 @@ func (tm *TodoManager) DeleteAllNotesForTask(taskID int64) {
     fmt.Printf("Deleted %d notes for task %d.\n", rowsAffected, taskID)
 }
 
+
+
+
+// AddProject adds a new project.
+func (tm *TodoManager) AddProject(name string) {
+    _, err := tm.db.Exec("INSERT INTO projects (name) VALUES (?)", name)
+    if err != nil {
+        log.Fatalf("Error adding project: %v", err)
+    }
+    fmt.Printf("Project '%s' added successfully.\n", name)
+}
+
+// UpdateProject updates an existing project by its ID.
+func (tm *TodoManager) UpdateProject(id int64, newName string, isNameSet bool) {
+    updates := []string{}
+    args := []any{}
+
+    if !isNameSet {
+        fmt.Printf("No update parameters provided for project ID %d.\n", id)
+        return
+    }
+
+    if isNameSet {
+        updates = append(updates, "name = ?")
+        args = append(args, newName)
+    }
+
+    updateQuery := fmt.Sprintf("UPDATE projects SET %s WHERE id = ?", strings.Join(updates, ", "))
+    args = append(args, id)
+
+    res, err := tm.db.Exec(updateQuery, args...)
+    if err != nil {
+        log.Fatalf("Error updating project %d: %v", id, err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Fatalf("Error checking rows affected for project update: %v", err)
+    }
+    if rowsAffected == 0 {
+        fmt.Printf("Project %d not found or values were not changed.\n", id)
+    } else {
+        fmt.Printf("Project %d updated successfully.\n", id)
+    }
+}
+
+// DeleteProject deletes a project by its ID.
+func (tm *TodoManager) DeleteProject(id int64) {
+    res, err := tm.db.Exec("DELETE FROM projects WHERE id = ?", id)
+    if err != nil {
+        log.Fatalf("Error deleting project with ID %d: %v", id, err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Fatalf("Error checking rows affected for project deletion (ID %d): %v", id, err)
+    }
+    if rowsAffected == 0 {
+        fmt.Printf("Project with ID %d not found.\n", id)
+    } else {
+        fmt.Printf("Project with ID %d deleted successfully.\n", id)
+    }
+}
+
+// DeleteProjects deletes multiple projects by their IDs.
+func (tm *TodoManager) DeleteProjects(ids []int64) {
+    if len(ids) == 0 {
+        fmt.Println("No project IDs provided for deletion.")
+        return
+    }
+
+    tx, err := tm.db.Begin()
+    if err != nil {
+        log.Fatalf("Error starting transaction for project deletion: %v", err)
+    }
+    defer tx.Rollback()
+
+    stmt, err := tx.Prepare("DELETE FROM projects WHERE id = ?")
+    if err != nil {
+        log.Fatalf("Error preparing delete statement for projects: %v", err)
+    }
+    defer stmt.Close()
+
+    for _, id := range ids {
+        res, err := stmt.Exec(id)
+        if err != nil {
+            log.Printf("Error deleting project %d: %v", id, err)
+            continue
+        }
+        rowsAffected, err := res.RowsAffected()
+        if err != nil {
+            log.Printf("Error checking rows affected for project %d deletion: %v", id, err)
+        }
+        if rowsAffected == 0 {
+            fmt.Printf("Project %d not found.\n", id)
+        } else {
+            fmt.Printf("Project %d deleted successfully.\n", id)
+        }
+    }
+
+    if err := tx.Commit(); err != nil {
+        log.Fatalf("Error committing project deletion transaction: %v", err)
+    }
+}
+
+
+
+
+// AddTag adds a new tag.
+func (tm *TodoManager) AddTag(name string) {
+    _, err := tm.db.Exec("INSERT INTO tags (name) VALUES (?)", name)
+    if err != nil {
+        log.Fatalf("Error adding tag: %v", err)
+    }
+    fmt.Printf("Tag '%s' added successfully.\n", name)
+}
+
+// UpdateTag updates an existing tag by its ID.
+func (tm *TodoManager) UpdateTag(id int64, newName string, isNameSet bool) {
+    updates := []string{}
+    args := []any{}
+
+    if !isNameSet {
+        fmt.Printf("No update parameters provided for tag ID %d.\n", id)
+        return
+    }
+
+    if isNameSet {
+        updates = append(updates, "name = ?")
+        args = append(args, newName)
+    }
+
+    updateQuery := fmt.Sprintf("UPDATE tags SET %s WHERE id = ?", strings.Join(updates, ", "))
+    args = append(args, id)
+
+    res, err := tm.db.Exec(updateQuery, args...)
+    if err != nil {
+        log.Fatalf("Error updating tag %d: %v", id, err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Fatalf("Error checking rows affected for tag update: %v", err)
+    }
+    if rowsAffected == 0 {
+        fmt.Printf("Tag %d not found or values were not changed.\n", id)
+    } else {
+        fmt.Printf("Tag %d updated successfully.\n", id)
+    }
+}
+
+// DeleteTag deletes a tag by its ID.
+func (tm *TodoManager) DeleteTag(id int64) {
+    res, err := tm.db.Exec("DELETE FROM tags WHERE id = ?", id)
+    if err != nil {
+        log.Fatalf("Error deleting tag with ID %d: %v", id, err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Fatalf("Error checking rows affected for tag deletion (ID %d): %v", id, err)
+    }
+    if rowsAffected == 0 {
+        fmt.Printf("Tag with ID %d not found.\n", id)
+    } else {
+        fmt.Printf("Tag with ID %d deleted successfully.\n", id)
+    }
+}
+
+// DeleteTags deletes multiple tags by their IDs.
+func (tm *TodoManager) DeleteTags(ids []int64) {
+    if len(ids) == 0 {
+        fmt.Println("No tag IDs provided for deletion.")
+        return
+    }
+
+    tx, err := tm.db.Begin()
+    if err != nil {
+        log.Fatalf("Error starting transaction for tag deletion: %v", err)
+    }
+    defer tx.Rollback()
+
+    stmt, err := tx.Prepare("DELETE FROM tags WHERE id = ?")
+    if err != nil {
+        log.Fatalf("Error preparing delete statement for tags: %v", err)
+    }
+    defer stmt.Close()
+
+    for _, id := range ids {
+        res, err := stmt.Exec(id)
+        if err != nil {
+            log.Printf("Error deleting tag %d: %v", id, err)
+            continue
+        }
+        rowsAffected, err := res.RowsAffected()
+        if err != nil {
+            log.Printf("Error checking rows affected for tag %d deletion: %v", id, err)
+        }
+        if rowsAffected == 0 {
+            fmt.Printf("Tag %d not found.\n", id)
+        } else {
+            fmt.Printf("Tag %d deleted successfully.\n", id)
+        }
+    }
+
+    if err := tx.Commit(); err != nil {
+        log.Fatalf("Error committing tag deletion transaction: %v", err)
+    }
+}
+
+
+
+
+// AddContext adds a new context.
+func (tm *TodoManager) AddContext(name string) {
+    _, err := tm.db.Exec("INSERT INTO contexts (name) VALUES (?)", name)
+    if err != nil {
+        log.Fatalf("Error adding context: %v", err)
+    }
+    fmt.Printf("Context '%s' added successfully.\n", name)
+}
+
+// UpdateContext updates an existing context by its ID.
+func (tm *TodoManager) UpdateContext(id int64, newName string, isNameSet bool) {
+    updates := []string{}
+    args := []any{}
+
+    if !isNameSet {
+        fmt.Printf("No update parameters provided for context ID %d.\n", id)
+        return
+    }
+
+    if isNameSet {
+        updates = append(updates, "name = ?")
+        args = append(args, newName)
+    }
+
+    updateQuery := fmt.Sprintf("UPDATE contexts SET %s WHERE id = ?", strings.Join(updates, ", "))
+    args = append(args, id)
+
+    res, err := tm.db.Exec(updateQuery, args...)
+    if err != nil {
+        log.Fatalf("Error updating context %d: %v", id, err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Fatalf("Error checking rows affected for context update: %v", err)
+    }
+    if rowsAffected == 0 {
+        fmt.Printf("Context %d not found or values were not changed.\n", id)
+    } else {
+        fmt.Printf("Context %d updated successfully.\n", id)
+    }
+}
+
+// DeleteContext deletes a context by its ID.
+func (tm *TodoManager) DeleteContext(id int64) {
+    res, err := tm.db.Exec("DELETE FROM contexts WHERE id = ?", id)
+    if err != nil {
+        log.Fatalf("Error deleting context with ID %d: %v", id, err)
+    }
+    rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        log.Fatalf("Error checking rows affected for context deletion (ID %d): %v", id, err)
+    }
+    if rowsAffected == 0 {
+        fmt.Printf("Context with ID %d not found.\n", id)
+    } else {
+        fmt.Printf("Context with ID %d deleted successfully.\n", id)
+    }
+}
+
+// DeleteContexts deletes multiple contexts by their IDs.
+func (tm *TodoManager) DeleteContexts(ids []int64) {
+    if len(ids) == 0 {
+        fmt.Println("No context IDs provided for deletion.")
+        return
+    }
+
+    tx, err := tm.db.Begin()
+    if err != nil {
+        log.Fatalf("Error starting transaction for context deletion: %v", err)
+    }
+    defer tx.Rollback()
+
+    stmt, err := tx.Prepare("DELETE FROM contexts WHERE id = ?")
+    if err != nil {
+        log.Fatalf("Error preparing delete statement for contexts: %v", err)
+    }
+    defer stmt.Close()
+
+    for _, id := range ids {
+        res, err := stmt.Exec(id)
+        if err != nil {
+            log.Printf("Error deleting context %d: %v", id, err)
+            continue
+        }
+        rowsAffected, err := res.RowsAffected()
+        if err != nil {
+            log.Printf("Error checking rows affected for context %d deletion: %v", id, err)
+        }
+        if rowsAffected == 0 {
+            fmt.Printf("Context %d not found.\n", id)
+        } else {
+            fmt.Printf("Context %d deleted successfully.\n", id)
+        }
+    }
+
+    if err := tx.Commit(); err != nil {
+        log.Fatalf("Error committing context deletion transaction: %v", err)
+    }
+}

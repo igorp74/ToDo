@@ -150,14 +150,52 @@ func main() {
     workhoursDelAll          := workhoursDelCmd.Flag("all"         , "", &Options{Help: "Delete all working hours"})
 
 
-    // List projects command
-    listProjectsCmd := parser.NewCommand("projects", "List all projects.")
+    // Project manager
+    projectCmd := parser.NewCommand("project", "Manage projects.")
 
-    // List contexts command
-    listContextsCmd := parser.NewCommand("contexts", "List all contexts.")
+    projectAddCmd     := projectCmd.NewCommand("add"   , "Add a new project.")
+    projectAddName    := projectAddCmd.String("name"   , "n", &Options{Required: true, Help: "Name of the project"})
 
-    // List tags command
-    listTagsCmd := parser.NewCommand("tags", "List all tags.")
+    projectDelCmd     := projectCmd.NewCommand("del"   , "Delete one or more projects by ID")
+    projectDelIDs     := projectDelCmd.String("ids"    , "I", &Options{Help: "Comma-separated IDs or ID ranges of projects to delete (e.g., '1,2,3-5,10')"})
+
+    projectUpdateCmd  := projectCmd.NewCommand("update", "Update an existing project.") // New subcommand
+    updateProjectID   := projectUpdateCmd.Int("id"     , "i", &Options{Required: true, Help: "ID of the project to update"})
+    updateProjectName := projectUpdateCmd.String("name", "n", &Options{Help: "New name of the project. Use empty string with flag to clear."})
+
+    projectListCmd    := projectCmd.NewCommand("list"  , "List all projects.")
+
+    // Tag manager
+    tagCmd := parser.NewCommand("tag", "Manage tags.")
+
+    tagAddCmd     := tagCmd.NewCommand("add"   , "Add a new tag.")
+    tagAddName    := tagAddCmd.String("name"   , "n", &Options{Required: true, Help: "Name of the tag"})
+
+    tagDelCmd     := tagCmd.NewCommand("del"   , "Delete one or more tags by ID")
+    tagDelIDs     := tagDelCmd.String("ids"    , "I", &Options{Help: "Comma-separated IDs or ID ranges of tags to delete (e.g., '1,2,3-5,10')"})
+
+    tagUpdateCmd  := tagCmd.NewCommand("update", "Update an existing tag.") // New subcommand
+    updateTagID   := tagUpdateCmd.Int("id"     , "i", &Options{Required: true, Help: "ID of the tag to update"})
+    updateTagName := tagUpdateCmd.String("name", "n", &Options{Help: "New name of the tag. Use empty string with flag to clear."})
+
+    tagListCmd    := tagCmd.NewCommand("list"  , "List all tags.")
+
+
+    // Context manager
+    contextCmd := parser.NewCommand("context", "Manage contexts.")
+
+    contextAddCmd     := contextCmd.NewCommand("add"   , "Add a new context.")
+    contextAddName    := contextAddCmd.String("name"   , "n", &Options{Required: true, Help: "Name of the context"})
+
+    contextDelCmd     := contextCmd.NewCommand("del"   , "Delete one or more contexts by ID")
+    contextDelIDs     := contextDelCmd.String("ids"    , "I", &Options{Help: "Comma-separated IDs or ID ranges of contexts to delete (e.g., '1,2,3-5,10')"})
+
+    contextUpdateCmd  := contextCmd.NewCommand("update", "Update an existing context.") // New subcommand
+    updateContextID   := contextUpdateCmd.Int("id"     , "i", &Options{Required: true, Help: "ID of the context to update"})
+    updateContextName := contextUpdateCmd.String("name", "n", &Options{Help: "New name of the context. Use empty string with flag to clear."})
+
+    contextListCmd    := contextCmd.NewCommand("list"  , "List all contexts.")
+
 
     err := parser.Parse(os.Args)
     if err != nil {
@@ -393,12 +431,81 @@ func main() {
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
-    case listProjectsCmd.Parsed:
+    case projectAddCmd.Parsed:
+        tm.AddProject(*projectAddName)
+    case projectListCmd.Parsed:
         ListProjects(tm)
-    case listContextsCmd.Parsed:
-        ListContexts(tm)
-    case listTagsCmd.Parsed:
+    case projectDelCmd.Parsed: // New case for deleting projects
+        if *projectDelIDs != "" {
+            idsToDelete, parseErr := parseIDs(*projectDelIDs)
+            if parseErr != nil {
+                fmt.Printf("Error parsing project IDs: %v\n", parseErr)
+                fmt.Println(parser.Usage(nil))
+                os.Exit(1)
+            }
+            tm.DeleteProjects(idsToDelete)
+        } else {
+            fmt.Println("At least one of --ids is required for 'project del' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+    case projectUpdateCmd.Parsed: // New case for updating projects
+        if *updateProjectName == "" {
+            fmt.Println("Project name must be provided for 'project update' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+        tm.UpdateProject(int64(*updateProjectID), *updateProjectName, projectUpdateCmd.GetFlag("name").IsSet)
+    case tagAddCmd.Parsed:
+        tm.AddTag(*tagAddName)
+    case tagListCmd.Parsed:
         ListTags(tm)
+    case tagDelCmd.Parsed: // New case for deleting tags
+        if *tagDelIDs != "" {
+            idsToDelete, parseErr := parseIDs(*tagDelIDs)
+            if parseErr != nil {
+                fmt.Printf("Error parsing tag IDs: %v\n", parseErr)
+                fmt.Println(parser.Usage(nil))
+                os.Exit(1)
+            }
+            tm.DeleteTags(idsToDelete)
+        } else {
+            fmt.Println("At least one of --ids is required for 'tag del' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+    case tagUpdateCmd.Parsed: // New case for updating tags
+        if *updateTagName == "" {
+            fmt.Println("Tag name must be provided for 'tag update' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+        tm.UpdateTag(int64(*updateTagID), *updateTagName, tagUpdateCmd.GetFlag("name").IsSet)
+    case contextAddCmd.Parsed:
+        tm.AddContext(*contextAddName)
+    case contextListCmd.Parsed:
+        ListContexts(tm)
+    case contextDelCmd.Parsed: // New case for deleting contexts
+        if *contextDelIDs != "" {
+            idsToDelete, parseErr := parseIDs(*contextDelIDs)
+            if parseErr != nil {
+                fmt.Printf("Error parsing context IDs: %v\n", parseErr)
+                fmt.Println(parser.Usage(nil))
+                os.Exit(1)
+            }
+            tm.DeleteContexts(idsToDelete)
+        } else {
+            fmt.Println("At least one of --ids is required for 'context del' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+    case contextUpdateCmd.Parsed: // New case for updating contexts
+        if *updateContextName == "" {
+            fmt.Println("Context name must be provided for 'context update' command.")
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+        tm.UpdateContext(int64(*updateContextID), *updateContextName, contextUpdateCmd.GetFlag("name").IsSet)
     default:
         fmt.Println(parser.Usage(nil))
     }
