@@ -6,11 +6,12 @@ Simple CLI app for task management written in Golang with SQLite as a backend, t
 
 # 📢 Features
 * 🛢️ **SQLite database** as a backend - I wanted one central place for all my tasks.
-  * Easier synching between machines
-  * No need for archiving/moving many files
+  * Easier synching between machines and operating systems - **portable**
+  * No need for archiving/moving many files - **compact**
   * With [DB Browser for SQLIte](https://sqlitebrowser.org) or other RDBMS tools like [DBeaver](https://dbeaver.io/download/) you may analyse (or edit) all of your data
 * 🔄 **Task recurrence**
-  * Make work with repetitive tasks fun
+  * Make your work with repetitive tasks fun
+  * Keep track of your events duration
 * 📜 **Unlimited notes** per task(s)
   * Every note has its own timestamp. You may add, delete or update notes & timestamps.
   * I am using notes as milestones during the longer tasks
@@ -24,6 +25,7 @@ Simple CLI app for task management written in Golang with SQLite as a backend, t
   * Want to check how many time you spent on daily meetings ? See overall tasks on projects ? Then minimal view is for you.
 * 🗂️ **Projects, Tags, Contexts**
   * For grouping tasks, enriching organisation and make search more logical
+  * Built-in manager for adding, deleting, updating and listing projects, tags and contexts
 * 📌 **Filter**
   * You may filter your tasks per status, projects, tags and/or contexts. One in a time or all at once.
   * You may filter tasks before or after start, due or end times    
