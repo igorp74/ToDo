@@ -606,7 +606,7 @@ func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []
                     note := task.Notes[j]
                     if note.Timestamp.Valid && note.Description.Valid {
                         // Changed to display actual note.ID instead of a calculated display ID
-                        sb.WriteString(fmt.Sprintf("         %-5d %s%s%s%s: %s%s%s\n", note.ID, style_italic, fg_green, FormatDisplayDateTime(note.Timestamp), style_reset, fg_yellow, note.Description.String, style_reset))
+                        sb.WriteString(fmt.Sprintf("         %-5d %s%s%s%s  %s%s%s\n", note.ID, style_italic, fg_green, FormatDisplayDateTime(note.Timestamp), style_reset, fg_yellow, note.Description.String, style_reset))
                     }
                 }
             }

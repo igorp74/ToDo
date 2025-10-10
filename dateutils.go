@@ -69,22 +69,20 @@ func FormatDuration(d time.Duration, TimeFormatMode int) string {
         if TimeFormatMode == 0 {
             parts = append(parts, fmt.Sprintf("%dd", days))
         } else {
-            parts = append(parts, fmt.Sprintf("%02dd", days))
-            // parts = append(parts, fmt.Sprintf("%s%s%02d%sd%s", fg_red, style_bold, days, style_reset, style_reset))
-            // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sd%s", fg_red, style_bold, days, style_reset, fg_red, style_reset))
+            // parts = append(parts, fmt.Sprintf("%s%s%3d%sd%s", style_bold, fg_blue, days, fg_black, fg_blue))
+            parts = append(parts, fmt.Sprintf("%s%s%3d%s%sd%s", fg_blue, style_bold, days, style_reset, fg_blue, style_reset))
         }
     } else {
         if TimeFormatMode == 1 {
-            parts = append(parts, "   ")
+            parts = append(parts, "    ")
         }
     }
     if hours > 0 {
         if TimeFormatMode == 0 {
             parts = append(parts, fmt.Sprintf("%dh", hours))
         } else {
-            parts = append(parts, fmt.Sprintf("%02dh", hours))
-            // parts = append(parts, fmt.Sprintf("%s%s%02d%sh%s", fg_red, style_bold, hours, style_reset, style_reset))
-            // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sh%s", fg_red, style_bold, hours, style_reset, fg_red, style_reset))
+            // parts = append(parts, fmt.Sprintf("%s%s%2d%sh%s", style_bold, fg_blue, hours, fg_black, fg_blue))
+            parts = append(parts, fmt.Sprintf("%s%s%2d%s%sh%s", fg_blue, style_bold, hours, style_reset, fg_blue, style_reset))
             }
     } else {
         if TimeFormatMode == 1 {
@@ -95,9 +93,8 @@ func FormatDuration(d time.Duration, TimeFormatMode int) string {
         if TimeFormatMode == 0 {
             parts = append(parts, fmt.Sprintf("%dm", minutes))
         } else {
-            parts = append(parts, fmt.Sprintf("%02dm", minutes))
-            // parts = append(parts, fmt.Sprintf("%s%s%02d%sm%s", fg_red, style_bold, minutes, style_reset, style_reset))
-            // parts = append(parts, fmt.Sprintf("%s%s%02d%s%sm%s", fg_red, style_bold, minutes, style_reset, fg_red, style_reset))
+            // parts = append(parts, fmt.Sprintf("%s%s%2d%sm%s", style_bold, fg_blue, minutes, fg_black, fg_blue))
+            parts = append(parts, fmt.Sprintf("%s%s%2d%s%sm%s", fg_blue, style_bold, minutes, style_reset, fg_blue, style_reset))
         }
     } else {
         if TimeFormatMode == 1 {
@@ -108,9 +105,8 @@ func FormatDuration(d time.Duration, TimeFormatMode int) string {
         if TimeFormatMode == 0 {
             parts = append(parts, fmt.Sprintf("%ds", seconds))
         } else {
-            parts = append(parts, fmt.Sprintf("%02ds", seconds))
-            // parts = append(parts, fmt.Sprintf("%s%s%02d%ss%s", fg_red, style_bold, seconds, style_reset, style_reset))
-            // parts = append(parts, fmt.Sprintf("%s%s%02d%s%ss%s", fg_red, style_bold, seconds, style_reset, fg_red, style_reset))
+            // parts = append(parts, fmt.Sprintf("%s%s%2d%ss%s", style_bold, fg_blue, seconds, fg_black, fg_blue))
+            parts = append(parts, fmt.Sprintf("%s%s%2d%s%ss%s", fg_blue, style_bold, seconds, style_reset, fg_blue, style_reset))
         }
     }
 
