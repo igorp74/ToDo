@@ -49,8 +49,15 @@ func ParseDateTime(dateTimeStr string, loc *time.Location) (NullableTime, error)
 
 func FormatDuration(d time.Duration, TimeFormatMode int) string {
     totalSeconds := int(d.Seconds())
+
+    zero_sec_fmt := ""
     if totalSeconds == 0 {
-        return "0s" // Changed to a shorter format for minimal display
+        if TimeFormatMode == 0 {
+            zero_sec_fmt = "0s"
+        } else {
+            zero_sec_fmt = fmt.Sprintf("%s%s%15d%s%ss%s", fg_blue, style_bold, 0, style_reset, fg_blue, style_reset)
+        }
+        return zero_sec_fmt
     }
 
     // Make duration positive for display
@@ -107,6 +114,10 @@ func FormatDuration(d time.Duration, TimeFormatMode int) string {
         } else {
             // parts = append(parts, fmt.Sprintf("%s%s%2d%ss%s", style_bold, fg_blue, seconds, fg_black, fg_blue))
             parts = append(parts, fmt.Sprintf("%s%s%2d%s%ss%s", fg_blue, style_bold, seconds, style_reset, fg_blue, style_reset))
+        }
+    } else {
+        if TimeFormatMode == 1 {
+            parts = append(parts, "   ")
         }
     }
 
