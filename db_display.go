@@ -14,6 +14,7 @@ const (
     DisplayFull = iota
     DisplayCondensed
     DisplayMinimal
+    DisplayMinimalMono
 
     style_reset     = "\033[0m"
     style_bold      = "\033[1m"
@@ -316,6 +317,7 @@ func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []
         // Calculate Duration and Working Hours Duration
         totalDurationStr   := "N/A"
         totalDurationStr2  := "N/A"
+        totalDurationStr3  := "N/A"
         workingDurationStr := "N/A"
         waitingDurationStr := "N/A"
         waitingWorkingDurationStr := "N/A"
@@ -326,6 +328,7 @@ func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []
                 totalDuration := CalculateCalendarDuration(task)
                 totalDurationStr  = FormatDuration(totalDuration,0)
                 totalDurationStr2 = FormatDuration(totalDuration,1)
+                totalDurationStr3 = FormatDuration(totalDuration,2)
 
                 workingDuration := tm.CalculateWorkingDuration(task.StartDate, task.EndDate, workingHours, holidaysMap)
                 workingDurationStr = FormatWorkingHoursDisplay(workingDuration)
@@ -335,6 +338,7 @@ func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []
                 totalDuration := CalculateCalendarDuration(tempTask)
                 totalDurationStr  = FormatDuration(totalDuration,0)
                 totalDurationStr2 = FormatDuration(totalDuration,1)
+                totalDurationStr3 = FormatDuration(totalDuration,2)
 
                 workingDuration := tm.CalculateWorkingDuration(task.StartDate, NullableTime{Time: time.Now().UTC(), Valid: true}, workingHours, holidaysMap)
                 workingDurationStr = FormatWorkingHoursDisplay(workingDuration)
@@ -634,6 +638,29 @@ func ListTasks( tm *TodoManager, projectFilter []string, projectExcludeFilter []
                 fg_blue, style_bold, totalDurationStr2, style_reset,
                 fg_green, task.ProjectName.String, style_reset,
                 style_bold, task.Title, style_reset)
+
+
+        case DisplayMinimalMono:
+            status_str := ""
+            switch task.Status {
+            case "pending":
+                status_str = "🚀"
+            case "completed":
+                status_str = "✅"
+            case "cancelled":
+                status_str = "❌"
+            case "waiting":
+                status_str = "⏸️"
+            }
+
+            fmt.Printf("%-5d %s  %-13s  %16s  %-20s %-80s \n",
+                task.ID,
+                status_str,
+                // FormatDisplayDateTime(createdAt),
+                FormatDisplayDate(task.StartDate),
+                totalDurationStr3, task.ProjectName.String, 
+                task.Title)
+
         }
     }
     fmt.Println("----------------------------------------------------------------------------------------------------------------")

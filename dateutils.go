@@ -52,10 +52,13 @@ func FormatDuration(d time.Duration, TimeFormatMode int) string {
 
     zero_sec_fmt := ""
     if totalSeconds == 0 {
-        if TimeFormatMode == 0 {
-            zero_sec_fmt = "0s"
-        } else {
-            zero_sec_fmt = fmt.Sprintf("%s%s%15d%s%ss%s", fg_blue, style_bold, 0, style_reset, fg_blue, style_reset)
+        switch TimeFormatMode {
+            case 0:
+                zero_sec_fmt = "0s"
+            case 1:
+                zero_sec_fmt = fmt.Sprintf("%s%s%15d%s%ss%s", fg_blue, style_bold, 0, style_reset, fg_blue, style_reset)
+            case 2:
+                zero_sec_fmt = fmt.Sprintf("%15ds", 0)
         }
         return zero_sec_fmt
     }
@@ -73,50 +76,65 @@ func FormatDuration(d time.Duration, TimeFormatMode int) string {
 
     parts := []string{}
     if days > 0 {
-        if TimeFormatMode == 0 {
-            parts = append(parts, fmt.Sprintf("%dd", days))
-        } else {
-            // parts = append(parts, fmt.Sprintf("%s%s%3d%sd%s", style_bold, fg_blue, days, fg_black, fg_blue))
-            parts = append(parts, fmt.Sprintf("%s%s%3d%s%sd%s", fg_blue, style_bold, days, style_reset, fg_blue, style_reset))
+        switch TimeFormatMode {
+            case 0:
+                parts = append(parts, fmt.Sprintf("%dd", days))
+            case 1:
+                // parts = append(parts, fmt.Sprintf("%s%s%3d%sd%s", style_bold, fg_blue, days, fg_black, fg_blue))
+                parts = append(parts, fmt.Sprintf("%s%s%3d%s%sd%s", fg_blue, style_bold, days, style_reset, fg_blue, style_reset))
+            case 2:
+                parts = append(parts, fmt.Sprintf("%3dd", days))
         }
     } else {
-        if TimeFormatMode == 1 {
+        if TimeFormatMode >= 1 {
             parts = append(parts, "    ")
         }
     }
+
     if hours > 0 {
-        if TimeFormatMode == 0 {
-            parts = append(parts, fmt.Sprintf("%dh", hours))
-        } else {
-            // parts = append(parts, fmt.Sprintf("%s%s%2d%sh%s", style_bold, fg_blue, hours, fg_black, fg_blue))
-            parts = append(parts, fmt.Sprintf("%s%s%2d%s%sh%s", fg_blue, style_bold, hours, style_reset, fg_blue, style_reset))
-            }
+        switch TimeFormatMode {
+            case 0:
+                parts = append(parts, fmt.Sprintf("%dh", hours))
+            case 1:
+                // parts = append(parts, fmt.Sprintf("%s%s%2d%sh%s", style_bold, fg_blue, hours, fg_black, fg_blue))
+                parts = append(parts, fmt.Sprintf("%s%s%2d%s%sh%s", fg_blue, style_bold, hours, style_reset, fg_blue, style_reset))
+            case 2:
+                parts = append(parts, fmt.Sprintf("%2dh", hours))
+        }
     } else {
-        if TimeFormatMode == 1 {
+        if TimeFormatMode >= 1 {
             parts = append(parts, "   ")
         }
     }
+
     if minutes > 0 {
-        if TimeFormatMode == 0 {
-            parts = append(parts, fmt.Sprintf("%dm", minutes))
-        } else {
-            // parts = append(parts, fmt.Sprintf("%s%s%2d%sm%s", style_bold, fg_blue, minutes, fg_black, fg_blue))
-            parts = append(parts, fmt.Sprintf("%s%s%2d%s%sm%s", fg_blue, style_bold, minutes, style_reset, fg_blue, style_reset))
+        switch TimeFormatMode {
+            case 0:
+                parts = append(parts, fmt.Sprintf("%dm", minutes))
+            case 1:
+                // parts = append(parts, fmt.Sprintf("%s%s%2d%sm%s", style_bold, fg_blue, minutes, fg_black, fg_blue))
+                parts = append(parts, fmt.Sprintf("%s%s%2d%s%sm%s", fg_blue, style_bold, minutes, style_reset, fg_blue, style_reset))
+            case 2:
+                parts = append(parts, fmt.Sprintf("%2dm", minutes))
         }
     } else {
-        if TimeFormatMode == 1 {
+        if TimeFormatMode >= 1 {
             parts = append(parts, "   ")
         }
     }
+
     if seconds > 0 {
-        if TimeFormatMode == 0 {
-            parts = append(parts, fmt.Sprintf("%ds", seconds))
-        } else {
-            // parts = append(parts, fmt.Sprintf("%s%s%2d%ss%s", style_bold, fg_blue, seconds, fg_black, fg_blue))
-            parts = append(parts, fmt.Sprintf("%s%s%2d%s%ss%s", fg_blue, style_bold, seconds, style_reset, fg_blue, style_reset))
+        switch TimeFormatMode {
+            case 0:
+                parts = append(parts, fmt.Sprintf("%ds", seconds))
+            case 1:
+                // parts = append(parts, fmt.Sprintf("%s%s%2d%ss%s", style_bold, fg_blue, seconds, fg_black, fg_blue))
+                parts = append(parts, fmt.Sprintf("%s%s%2d%s%ss%s", fg_blue, style_bold, seconds, style_reset, fg_blue, style_reset))
+            case 2:
+                parts = append(parts, fmt.Sprintf("%2ds", seconds))
         }
     } else {
-        if TimeFormatMode == 1 {
+        if TimeFormatMode >= 1 {
             parts = append(parts, "   ")
         }
     }

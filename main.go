@@ -8,6 +8,7 @@ import (
     "os"
     "strconv"
     "strings"
+    "time"
 )
 func main() {
     // Define command-line flags and arguments
@@ -22,7 +23,8 @@ func main() {
     addProject            := addCmd.String("project"         , "p",  &Options{Help: "Project name (will be created if not exists)"})
     addStart              := addCmd.String("start-date"      , "s",  &Options{Help: "Start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     addDue                := addCmd.String("due-date"        , "D",  &Options{Help: "Due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    addEnd                := addCmd.String("end-date"        , "E",  &Options{Help: "End date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."}) // Added
+    addEnd                := addCmd.String("end-date"        , "E",  &Options{Help: "End date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    addEndSameAsStart     := addCmd.Flag("end-same-start"    , "E0", &Options{Help: "Set end date same as start date"}) // Added flag
     addRecurrence         := addCmd.String("recurrence"      , "r",  &Options{Help: "Recurrence pattern (daily, weekly, monthly, yearly, or comma-separated days of week for weekly, e.g., 'weekly:Tue,Thu')"})
     addRecurrenceInterval := addCmd.Int("recurrence-interval", "ri", &Options{Default: 1, Help: "Interval for recurrence (e.g., 2 for every 2 days)"})
     addContexts           := addCmd.StringList("contexts"    , "c",  &Options{Help: "Comma-separated list of contexts (e.g., 'work,home')"})
@@ -52,6 +54,7 @@ func main() {
     updateStart              := updateCmd.String("start-date"         , "s" , &Options{Help: "New start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     updateDue                := updateCmd.String("due-date"           , "D" , &Options{Help: "New due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     updateEnd                := updateCmd.String("end-date"           , "E" , &Options{Help: "New end date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    updateEndSameAsStart     := updateCmd.Flag("end-same-start"       , "E0", &Options{Help: "Set end date same as start date"}) // Added flag
     updateStatus             := updateCmd.String("status"             , "st", &Options{Help: "New status (pending, completed, cancelled, waiting)"}) // Unified flag
     updateRecurrence         := updateCmd.String("recurrence"         , "r" , &Options{Help: "New recurrence pattern (daily, weekly, monthly, yearly, or comma-separated days of week for weekly, e.g., 'weekly:Tue,Thu')"})
     updateRecurrenceInterval := updateCmd.Int("recurrence-interval"   , "ri", &Options{Help: "New interval for recurrence"})
@@ -97,11 +100,11 @@ func main() {
     // List command
     listCmd             := parser.NewCommand("list", "List tasks.")
     listProject         := listCmd.StringList("project"        , "p" , &Options{Help: "Filter  tasks by project names (comma-separated)"})
-	listExcludeProjects := listCmd.StringList("exclude-project", "xp", &Options{Help: "Exclude tasks by project names (comma-separated)"})
+    listExcludeProjects := listCmd.StringList("exclude-project", "xp", &Options{Help: "Exclude tasks by project names (comma-separated)"})
     listContext         := listCmd.StringList("context"        , "c" , &Options{Help: "Filter  tasks by context names (comma-separated)"})
-	listExcludeContexts := listCmd.StringList("exclude-context", "xc", &Options{Help: "Exclude tasks by context names (comma-separated)"})
+    listExcludeContexts := listCmd.StringList("exclude-context", "xc", &Options{Help: "Exclude tasks by context names (comma-separated)"})
     listTag             := listCmd.StringList("tag"            , "T" , &Options{Help: "Filter  tasks by tag names     (comma-separated)"})
-	listExcludeTags     := listCmd.StringList("exclude-tag"    , "xT", &Options{Help: "Exclude tasks by tag name      (comma-separated)"})
+    listExcludeTags     := listCmd.StringList("exclude-tag"    , "xT", &Options{Help: "Exclude tasks by tag name      (comma-separated)"})
     listStatus          := listCmd.String("status"             , "st", &Options{Default: "pending", Help: "Filter by status (pending, completed, cancelled, waiting, all)"})
     listStartBefore     := listCmd.String("start-before"       , "sb", &Options{Help: "Filter by start date before (YYYY-MM-DD HH:MM:SS)"})
     listStartAfter      := listCmd.String("start-after"        , "sa", &Options{Help: "Filter by start date after  (YYYY-MM-DD HH:MM:SS)"})
@@ -111,7 +114,7 @@ func main() {
     listEndAfter        := listCmd.String("end-after"          , "ea", &Options{Help: "Filter by end date after    (YYYY-MM-DD HH:MM:SS)"})   // Added new flag
     listSortBy          := listCmd.String("sort-by"            , "SB", &Options{Default: "due_date", Help: "Sort by field (id, title, start_date, due_date, status, project, end_date)"}) // Updated help
     listOrder           := listCmd.String("order"              , "o" , &Options{Default: "asc", Help: "Sort order (asc, desc)"})
-    listFormat          := listCmd.Int("format"                , "f" , &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal"})
+    listFormat          := listCmd.Int("format"                , "f" , &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal, 3=Minimal_Mono"})
     listNotes           := listCmd.String("notes"              , "n" , &Options{Default: "none", Help: "Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes)"})
     listTaskIDs         := listCmd.String("ids"                , "I" , &Options{Help: "Comma-separated IDs or ID ranges of tasks to list (e.g., '1,2,3-5,10')"})
     listSearch          := listCmd.String("search"             , "S" , &Options{Help: "Search for text in task titles, descriptions and notes (case-insensitive)"})
@@ -209,17 +212,48 @@ func main() {
 
     switch {
     case addCmd.Parsed:
+        startDateStr := *addStart
+        isStartDateSet := addCmd.GetFlag("start-date").IsSet
+        endDateStr := *addEnd
+        isEndDateSet := addCmd.GetFlag("end-date").IsSet
+
+        // Handle -E0 (end same as start)
+        if *addEndSameAsStart {
+            if isStartDateSet {
+                if startDateStr == "" {
+                    // User explicitly set -s "" (Now)
+                    // Resolve Now here to ensure start and end are exactly identical
+                    nowStr := time.Now().UTC().Format("2006-01-02 15:04:05")
+                    startDateStr = nowStr
+                    endDateStr = nowStr
+                    isEndDateSet = true
+                } else {
+                    // User provided a specific start date
+                    endDateStr = startDateStr
+                    isEndDateSet = true
+                }
+            } else {
+                // Start date not set, defaults to Now.
+                // Resolve Now here to ensure start and end are exactly identical
+                nowStr := time.Now().UTC().Format("2006-01-02 15:04:05")
+                startDateStr = nowStr
+                endDateStr = nowStr
+                isStartDateSet = true // We are now providing the default explicit value
+                isEndDateSet = true
+            }
+        }
+
         tm.AddTask(
             nil, // Pass nil for the transaction when adding a new task directly
             *addTitle,
             *addDesc,
             *addProject,
-            *addStart,
-            addCmd.GetFlag("start-date").IsSet, // Pass IsSet status for start-date
+            startDateStr, // Use potentially modified start date
+            isStartDateSet, // Use potentially modified flag
             *addDue,
             addCmd.GetFlag("due-date").IsSet, // Pass IsSet status for due-date
-            *addEnd, // Pass the new end date string
-            addCmd.GetFlag("end-date").IsSet, // Pass IsSet status for end-date
+            endDateStr, // Use potentially modified end date
+            isEndDateSet, // Use potentially modified flag
             *addRecurrence,
             *addRecurrenceInterval,
             *addContexts,
@@ -326,6 +360,7 @@ func main() {
             *updateRemoveContexts, updateCmd.GetFlag("remove-contexts").IsSet,
             *updateAddTags, updateCmd.GetFlag("add-tags").IsSet,
             *updateRemoveTags, updateCmd.GetFlag("remove-tags").IsSet,
+            *updateEndSameAsStart, // Pass the new flag value
         )
         if err != nil {
             log.Fatalf("Error updating tasks: %v", err)
@@ -573,9 +608,9 @@ func getTaskIDsForDeletionConfirmation(tm *TodoManager, initialIDs []int64, proj
 // This function is now generic and can be used for tasks, notes, etc.
 func parseIDs(idStr string) ([]int64, error) {
     uniqueIDs := make(map[int64]bool)
-    parts := strings.Split(idStr, ",")
+    parts := strings.SplitSeq(idStr, ",")
 
-    for _, part := range parts {
+    for part := range parts {
         part = strings.TrimSpace(part)
         if part == "" {
             continue

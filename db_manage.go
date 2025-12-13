@@ -655,7 +655,7 @@ func (tm *TodoManager) DeleteTasks(ids []int64, completeInstead bool, projectFil
 func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, startDateStr string, isStartDateSet bool, dueDateStr string, isDueDateSet bool,
     endDateStr string, isEndDateSet bool, status string, recurrence string, recurrenceInterval int, contexts []string, isContextsSet bool, tags []string, isTagsSet bool, startWaitingStr string, isStartWaitingSet bool, endWaitingStr string, isEndWaitingSet bool,
     clearProject, clearContexts, clearTags, clearStart, clearDue, clearEnd, clearRecurrence, clearWaiting bool,
-    addContexts []string, isAddContextsSet bool, removeContexts []string, isRemoveContextsSet bool, addTags []string, isAddTagsSet bool, removeTags []string, isRemoveTagsSet bool) error { // Added new incremental flags
+    addContexts []string, isAddContextsSet bool, removeContexts []string, isRemoveContextsSet bool, addTags []string, isAddTagsSet bool, removeTags []string, isRemoveTagsSet bool, setEndToStart bool) error { // Added setEndToStart
 
     if len(ids) == 0 {
         return fmt.Errorf("no task IDs provided for update")
@@ -771,7 +771,38 @@ func (tm *TodoManager) UpdateTasks(ids []int64, title, description, project, sta
         endUpdateApplied := false
         oldStatus := currentTask.Status // Store old status before potential update
 
-        if clearEnd { // Explicitly clear end date (e.g., -clear-E)
+        if setEndToStart {
+            // New logic: Set end date same as start date
+            var targetStartDate NullableTime
+            
+            if isStartDateSet {
+                // If a new start date is being set, mirror it
+                if startDateStr == "" {
+                    targetStartDate = NullableTime{Time: time.Now().UTC(), Valid: true}
+                } else {
+                    var err error
+                    targetStartDate, err = ParseDateTime(startDateStr, time.Local)
+                    if err != nil {
+                        return fmt.Errorf("invalid start date format for task %d (when syncing end date): %w", id, err)
+                    }
+                }
+            } else {
+                // If start date is NOT changing, use the existing start date
+                targetStartDate = currentTask.StartDate
+            }
+
+            if targetStartDate.Valid {
+                sqlTarget, _ := targetStartDate.Value()
+                updates = append(updates, "end_date = ?")
+                args = append(args, sqlTarget)
+                endUpdateApplied = true
+                
+                // If syncing end to start, usually implies completion if not specified
+                if status == "" && oldStatus != "completed" {
+                    status = "completed"
+                }
+            }
+        } else if clearEnd { // Explicitly clear end date (e.g., -clear-E)
             updates = append(updates, "end_date = NULL")
             endUpdateApplied = true
         } else if isEndDateSet { // Explicitly set end date (e.g., -E "2025-01-01", -E "now", or -E)
