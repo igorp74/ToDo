@@ -1,3 +1,6 @@
+
+<img width="4288" height="1969" alt="etodo" src="https://github.com/user-attachments/assets/41ab9145-afbc-4ae7-88d7-5c1a12157421" />
+
 # ToDo
 Simple CLI app for task management written in Golang with SQLite as a backend, task recurrence, unlimited notes and working hours duration.
 
