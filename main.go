@@ -12,9 +12,12 @@ import (
 )
 func main() {
     // Define command-line flags and arguments
-    parser := NewParser("todo", "A simple CLI todo application.")
+    parser := NewParser("todo", "Task Management CLI application.")
     // Global flag for database path
     dbPath := parser.String("db-path", "", &Options{Help: "Custom path and name for the database file (e.g., /path/to/my/todo.db)"})
+
+    // Help command
+    helpCmd                := parser.NewCommand("help", "Show all commands and options")
 
     // Add command
     addCmd                := parser.NewCommand("add", "Add a new todo task.")
@@ -54,8 +57,8 @@ func main() {
     updateStart              := updateCmd.String("start-date"         , "s" , &Options{Help: "New start date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     updateDue                := updateCmd.String("due-date"           , "D" , &Options{Help: "New due date (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
     updateEnd                := updateCmd.String("end-date"           , "E" , &Options{Help: "New end date (completion date) (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
-    updateEndSameAsStart     := updateCmd.Flag("end-same-start"       , "E0", &Options{Help: "Set end date same as start date"}) // Added flag
-    updateStatus             := updateCmd.String("status"             , "st", &Options{Help: "New status (pending, completed, cancelled, waiting)"}) // Unified flag
+    updateEndSameAsStart     := updateCmd.Flag("end-same-start"       , "E0", &Options{Help: "Set end date same as start date"})
+    updateStatus             := updateCmd.String("status"             , "st", &Options{Help: "New status (pending, completed, cancelled, waiting)"})
     updateRecurrence         := updateCmd.String("recurrence"         , "r" , &Options{Help: "New recurrence pattern (daily, weekly, monthly, yearly, or comma-separated days of week for weekly, e.g., 'weekly:Tue,Thu')"})
     updateRecurrenceInterval := updateCmd.Int("recurrence-interval"   , "ri", &Options{Help: "New interval for recurrence"})
     updateContexts           := updateCmd.StringList("contexts"       , "c" , &Options{Help: "Comma-separated list of contexts (replaces existing)"})
@@ -81,7 +84,7 @@ func main() {
     addNoteCmd            := parser.NewCommand("add-note"      , "Add a new note to a task.")
     addNoteTaskID         := addNoteCmd.Int("task-id"          , "i" , &Options{Required: true, Help: "ID of the task to add a note to"})
     addNoteDescription    := addNoteCmd.String("description"   , "d" , &Options{Required: true, Help: "Description of the note"})
-    addNoteTimestamp      := addNoteCmd.String("timestamp"     , "ts", &Options{Help: "Timestamp for the note (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."}) // Added
+    addNoteTimestamp      := addNoteCmd.String("timestamp"     , "ts", &Options{Help: "Timestamp for the note (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
 
     // Update Note commands
     updateNoteCmd         := parser.NewCommand("update-note"   , "Update an existing note by its permanent database ID.")
@@ -110,9 +113,9 @@ func main() {
     listStartAfter      := listCmd.String("start-after"        , "sa", &Options{Help: "Filter by start date after  (YYYY-MM-DD HH:MM:SS)"})
     listDueBefore       := listCmd.String("due-before"         , "db", &Options{Help: "Filter by due date before   (YYYY-MM-DD HH:MM:SS)"})
     listDueAfter        := listCmd.String("due-after"          , "da", &Options{Help: "Filter by due date after    (YYYY-MM-DD HH:MM:SS)"})
-    listEndBefore       := listCmd.String("end-before"         , "eb", &Options{Help: "Filter by end date before   (YYYY-MM-DD HH:MM:SS)"}) // Added new flag
-    listEndAfter        := listCmd.String("end-after"          , "ea", &Options{Help: "Filter by end date after    (YYYY-MM-DD HH:MM:SS)"})   // Added new flag
-    listSortBy          := listCmd.String("sort-by"            , "SB", &Options{Default: "due_date", Help: "Sort by field (id, title, start_date, due_date, status, project, end_date)"}) // Updated help
+    listEndBefore       := listCmd.String("end-before"         , "eb", &Options{Help: "Filter by end date before   (YYYY-MM-DD HH:MM:SS)"})
+    listEndAfter        := listCmd.String("end-after"          , "ea", &Options{Help: "Filter by end date after    (YYYY-MM-DD HH:MM:SS)"})
+    listSortBy          := listCmd.String("sort-by"            , "SB", &Options{Default: "due_date", Help: "Sort by field (id, title, start_date, due_date, status, project, end_date)"})
     listOrder           := listCmd.String("order"              , "o" , &Options{Default: "asc", Help: "Sort order (asc, desc)"})
     listFormat          := listCmd.Int("format"                , "f" , &Options{Default: DisplayFull, Help: "Output format: 0=Full, 1=Condensed, 2=Minimal, 3=Minimal_Mono"})
     listNotes           := listCmd.String("notes"              , "n" , &Options{Default: "none", Help: "Display notes: 'none', 'all', or a number (e.g., '1', '2' for last N notes)"})
@@ -128,11 +131,11 @@ func main() {
     holidayAddName    := holidayAddCmd.String("name"   , "n", &Options{Required: true, Help: "Name of the holiday"})
 
     holidayListCmd    := holidayCmd.NewCommand("list"  , "List all holidays.")
-    holidayDelCmd     := holidayCmd.NewCommand("del"   , "Delete one or more holidays by ID or delete all.") // Modified help text
+    holidayDelCmd     := holidayCmd.NewCommand("del"   , "Delete one or more holidays by ID or delete all.")
     holidayDelIDs     := holidayDelCmd.String("ids"    , "I", &Options{Help: "Comma-separated IDs or ID ranges of holidays to delete (e.g., '1,2,3-5,10')"})
     holidayDelAll     := holidayDelCmd.Flag("all"      , "a", &Options{Help: "Delete all holidays"})
 
-    holidayUpdateCmd  := holidayCmd.NewCommand("update", "Update an existing holiday.") // New subcommand
+    holidayUpdateCmd  := holidayCmd.NewCommand("update", "Update an existing holiday.")
     updateHolidayID   := holidayUpdateCmd.Int("id"     , "i", &Options{Required: true, Help: "ID of the holiday to update"})
     updateHolidayDate := holidayUpdateCmd.String("date", "d", &Options{Help: "New date of the holiday (YYYY-MM-DD). Use empty string with flag to clear."})
     updateHolidayName := holidayUpdateCmd.String("name", "n", &Options{Help: "New name of the holiday. Use empty string with flag to clear."})
@@ -148,7 +151,7 @@ func main() {
     workhoursSetEndMinute    := workhoursSetCmd.Int("end-minute"   , "eM", &Options{Default: 0, Help: "End minute (0-59)"})
     workhoursSetBreakMinutes := workhoursSetCmd.Int("break-minutes", "b", &Options{Default: 0, Help: "Break duration in minutes for this day"})
     workhoursListCmd         := workhoursCmd.NewCommand("list"     , "List all defined working hours.")
-    workhoursDelCmd          := workhoursCmd.NewCommand("del"      , "Delete working hours for one or more days or delete all.") // Modified help text
+    workhoursDelCmd          := workhoursCmd.NewCommand("del"      , "Delete working hours for one or more days or delete all.")
     workhoursDelDays         := workhoursDelCmd.String("days"      , "", &Options{Help: "Comma-separated day of week numbers or ranges to delete working hours for (e.g., '1,2,3-5')"})
     workhoursDelAll          := workhoursDelCmd.Flag("all"         , "", &Options{Help: "Delete all working hours"})
 
@@ -162,7 +165,7 @@ func main() {
     projectDelCmd     := projectCmd.NewCommand("del"   , "Delete one or more projects by ID")
     projectDelIDs     := projectDelCmd.String("ids"    , "I", &Options{Help: "Comma-separated IDs or ID ranges of projects to delete (e.g., '1,2,3-5,10')"})
 
-    projectUpdateCmd  := projectCmd.NewCommand("update", "Update an existing project.") // New subcommand
+    projectUpdateCmd  := projectCmd.NewCommand("update", "Update an existing project.")
     updateProjectID   := projectUpdateCmd.Int("id"     , "i", &Options{Required: true, Help: "ID of the project to update"})
     updateProjectName := projectUpdateCmd.String("name", "n", &Options{Help: "New name of the project. Use empty string with flag to clear."})
 
@@ -177,7 +180,7 @@ func main() {
     tagDelCmd     := tagCmd.NewCommand("del"   , "Delete one or more tags by ID")
     tagDelIDs     := tagDelCmd.String("ids"    , "I", &Options{Help: "Comma-separated IDs or ID ranges of tags to delete (e.g., '1,2,3-5,10')"})
 
-    tagUpdateCmd  := tagCmd.NewCommand("update", "Update an existing tag.") // New subcommand
+    tagUpdateCmd  := tagCmd.NewCommand("update", "Update an existing tag.")
     updateTagID   := tagUpdateCmd.Int("id"     , "i", &Options{Required: true, Help: "ID of the tag to update"})
     updateTagName := tagUpdateCmd.String("name", "n", &Options{Help: "New name of the tag. Use empty string with flag to clear."})
 
@@ -193,7 +196,7 @@ func main() {
     contextDelCmd     := contextCmd.NewCommand("del"   , "Delete one or more contexts by ID")
     contextDelIDs     := contextDelCmd.String("ids"    , "I", &Options{Help: "Comma-separated IDs or ID ranges of contexts to delete (e.g., '1,2,3-5,10')"})
 
-    contextUpdateCmd  := contextCmd.NewCommand("update", "Update an existing context.") // New subcommand
+    contextUpdateCmd  := contextCmd.NewCommand("update", "Update an existing context.")
     updateContextID   := contextUpdateCmd.Int("id"     , "i", &Options{Required: true, Help: "ID of the context to update"})
     updateContextName := contextUpdateCmd.String("name", "n", &Options{Help: "New name of the context. Use empty string with flag to clear."})
 
@@ -207,10 +210,12 @@ func main() {
     }
 
     // Initialize TodoManager with the determined database path
-    tm := NewTodoManager(*dbPath) // Correctly instantiate tm
+    tm := NewTodoManager(*dbPath)
     defer tm.Close()
 
     switch {
+    case helpCmd.Parsed:
+        fmt.Println(parser.Usage(nil))
     case addCmd.Parsed:
         startDateStr := *addStart
         isStartDateSet := addCmd.GetFlag("start-date").IsSet
@@ -360,7 +365,7 @@ func main() {
             *updateRemoveContexts, updateCmd.GetFlag("remove-contexts").IsSet,
             *updateAddTags, updateCmd.GetFlag("add-tags").IsSet,
             *updateRemoveTags, updateCmd.GetFlag("remove-tags").IsSet,
-            *updateEndSameAsStart, // Pass the new flag value
+            *updateEndSameAsStart,
         )
         if err != nil {
             log.Fatalf("Error updating tasks: %v", err)
@@ -418,7 +423,7 @@ func main() {
         tm.AddHoliday(*holidayAddDate, *holidayAddName)
     case holidayListCmd.Parsed:
         ListHolidays(tm)
-    case holidayDelCmd.Parsed: // New case for deleting holidays
+    case holidayDelCmd.Parsed:
         if *holidayDelAll {
             tm.DeleteAllHolidays()
         } else if *holidayDelIDs != "" {
@@ -434,7 +439,7 @@ func main() {
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
-    case holidayUpdateCmd.Parsed: // New case for updating holidays
+    case holidayUpdateCmd.Parsed:
         if *updateHolidayDate == "" && *updateHolidayName == "" {
             fmt.Println("At least one of --date or --name must be provided for 'holiday update' command.")
             fmt.Println(parser.Usage(nil))
@@ -446,7 +451,7 @@ func main() {
         tm.SetWorkingHours(*workhoursSetDay, *workhoursSetStartHour, *workhoursSetStartMinute, *workhoursSetEndHour, *workhoursSetEndMinute, *workhoursSetBreakMinutes)
     case workhoursListCmd.Parsed:
         ListWorkingHours(tm)
-    case workhoursDelCmd.Parsed: // New case for deleting working hours
+    case workhoursDelCmd.Parsed:
         if *workhoursDelAll {
             tm.DeleteAllWorkingHours()
         } else if *workhoursDelDays != "" {
@@ -470,7 +475,7 @@ func main() {
         tm.AddProject(*projectAddName)
     case projectListCmd.Parsed:
         ListProjects(tm)
-    case projectDelCmd.Parsed: // New case for deleting projects
+    case projectDelCmd.Parsed:
         if *projectDelIDs != "" {
             idsToDelete, parseErr := parseIDs(*projectDelIDs)
             if parseErr != nil {
@@ -484,7 +489,7 @@ func main() {
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
-    case projectUpdateCmd.Parsed: // New case for updating projects
+    case projectUpdateCmd.Parsed:
         if *updateProjectName == "" {
             fmt.Println("Project name must be provided for 'project update' command.")
             fmt.Println(parser.Usage(nil))
@@ -495,7 +500,7 @@ func main() {
         tm.AddTag(*tagAddName)
     case tagListCmd.Parsed:
         ListTags(tm)
-    case tagDelCmd.Parsed: // New case for deleting tags
+    case tagDelCmd.Parsed:
         if *tagDelIDs != "" {
             idsToDelete, parseErr := parseIDs(*tagDelIDs)
             if parseErr != nil {
@@ -509,7 +514,7 @@ func main() {
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
-    case tagUpdateCmd.Parsed: // New case for updating tags
+    case tagUpdateCmd.Parsed:
         if *updateTagName == "" {
             fmt.Println("Tag name must be provided for 'tag update' command.")
             fmt.Println(parser.Usage(nil))
@@ -520,7 +525,7 @@ func main() {
         tm.AddContext(*contextAddName)
     case contextListCmd.Parsed:
         ListContexts(tm)
-    case contextDelCmd.Parsed: // New case for deleting contexts
+    case contextDelCmd.Parsed:
         if *contextDelIDs != "" {
             idsToDelete, parseErr := parseIDs(*contextDelIDs)
             if parseErr != nil {
@@ -534,7 +539,7 @@ func main() {
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
-    case contextUpdateCmd.Parsed: // New case for updating contexts
+    case contextUpdateCmd.Parsed:
         if *updateContextName == "" {
             fmt.Println("Context name must be provided for 'context update' command.")
             fmt.Println(parser.Usage(nil))
@@ -676,9 +681,9 @@ type Command struct {
     Name     string
     Help     string
     Flags    []*Flag
-    Commands []*Command // Added to support subcommands
+    Commands []*Command
     Parsed   bool
-    parent   *Parser    // Parent is a Parser for top-level commands
+    parent   *Parser
 }
 
 // NewCommand method for Command struct to create subcommands
@@ -952,8 +957,9 @@ func (p *Parser) Usage(err error) string {
     if err != nil {
         sb.WriteString(fmt.Sprintf("Error: %s\n\n", err))
     }
-    sb.WriteString(fmt.Sprintf("Usage: %s [global options] <command> [command options]\n", p.Name))
-    sb.WriteString(fmt.Sprintf("  %s\n\n", p.Help))
+    sb.WriteString(fmt.Sprintf("\n%s%sToDo%s - %s%s%s\n", style_bold, fg_green, style_reset, fg_green, p.Help, style_reset))
+    sb.WriteString("------------------------------------------------------------------------------------\n")
+    sb.WriteString(fmt.Sprintf("%sUsage%s: %s [global options] <command> [command options]\n\n", style_bold, style_reset, p.Name))
 
     // Global flags usage
     if len(p.Flags) > 0 {
@@ -961,25 +967,25 @@ func (p *Parser) Usage(err error) string {
         for _, flag := range p.Flags {
             short := ""
             if flag.Short != "" {
-                short = fmt.Sprintf("-%s, ", flag.Short)
+                short = fmt.Sprintf("%s%s-%s%s, ", style_bold, fg_blue, flag.Short, style_reset)
             }
             defaultValue := ""
             if flag.Options != nil && flag.Options.Default != nil {
                 defaultValue = fmt.Sprintf(" (default: %v)", flag.Options.Default)
             }
-            sb.WriteString(fmt.Sprintf("  %s--%s\t%s%s\n", short, flag.Name, flag.Options.Help, defaultValue))
+            sb.WriteString(fmt.Sprintf("  %s%s--%s%s   %s%s\n", short, fg_blue, flag.Name, style_reset, flag.Options.Help, defaultValue))
         }
         sb.WriteString("\n")
     }
 
     sb.WriteString("Commands:\n")
     for _, cmd := range p.Commands {
-        sb.WriteString(fmt.Sprintf("\n  %s%s%s\t%s%s\n", style_bold, fg_green, cmd.Name, style_reset, cmd.Help))
+        sb.WriteString(fmt.Sprintf("\n  %s%s%s   %s%s%s%s\n", style_bold, fg_green, cmd.Name, style_reset, fg_green, cmd.Help, style_reset))
         if len(cmd.Flags) > 0 {
             for _, flag := range cmd.Flags {
                 short := ""
                 if flag.Short != "" {
-                    short = fmt.Sprintf("-%s, ", flag.Short)
+                    short = fmt.Sprintf("-%-2s", flag.Short)
                 }
                 required := ""
                 if flag.Options != nil && flag.Options.Required {
@@ -989,18 +995,18 @@ func (p *Parser) Usage(err error) string {
                 if flag.Options != nil && flag.Options.Default != nil {
                     defaultValue = fmt.Sprintf(" (default: %v)", flag.Options.Default)
                 }
-                sb.WriteString(fmt.Sprintf("    %s--%s\t%s%s%s\n", short, flag.Name, flag.Options.Help, required, defaultValue))
+                sb.WriteString(fmt.Sprintf("  %s%s%s%s | %s--%-20s%s %s%s%s%s%s%s%s\n", style_bold, fg_blue, short, style_reset, fg_blue, flag.Name, style_reset, flag.Options.Help, fg_red, required, style_reset, fg_magenta, defaultValue, style_reset))
             }
         }
         // List subcommands
         if len(cmd.Commands) > 0 {
             sb.WriteString(fmt.Sprintf("    Subcommands for %s:\n", cmd.Name))
             for _, subCmd := range cmd.Commands {
-                sb.WriteString(fmt.Sprintf("      %s %s\t%s\n", cmd.Name, subCmd.Name, subCmd.Help))
+                sb.WriteString(fmt.Sprintf("       %s%s%s%s  %s%s%s\n",style_bold, fg_yellow, subCmd.Name, style_reset, fg_yellow, subCmd.Help, style_reset))
                 for _, flag := range subCmd.Flags {
                     short := ""
                     if flag.Short != "" {
-                        short = fmt.Sprintf("-%s, ", flag.Short)
+                        short = fmt.Sprintf("%s%s-%-3s%s", style_bold, fg_blue, flag.Short, style_reset)
                     }
                     required := ""
                     if flag.Options != nil && flag.Options.Required {
@@ -1011,7 +1017,7 @@ func (p *Parser) Usage(err error) string {
                         defaultValue = fmt.Sprintf(" (default: %v)", flag.Options.Default)
                     }
                     // Changed \\n to \n to correctly render newlines
-                    sb.WriteString(fmt.Sprintf("          %s--%s\t%s%s%s\n", short, flag.Name, flag.Options.Help, required, defaultValue))
+                    sb.WriteString(fmt.Sprintf("        %s| %s--%s%s\t%s%s%s\n", short, fg_blue, flag.Name, style_reset, flag.Options.Help, required, defaultValue))
                 }
             }
         }
