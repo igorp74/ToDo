@@ -17,6 +17,7 @@ Simple CLI app for task management written in Golang with SQLite as a backend, t
   * Keep track of your events duration
 * 📜 **Unlimited notes** per task(s)
   * Every note has its own timestamp. You may add, delete or update notes & timestamps.
+  * Various multiple notes could be moved to specific task.
   * I am using notes as milestones during the longer tasks
 * 🏖️ **Holidays manager**
   * You may add, edit or delete any holidays and non-working days you want.
