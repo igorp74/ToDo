@@ -1644,7 +1644,7 @@ func (tm *TodoManager) GetNotesForTask(taskID int64) []Note {
 }
 
 // UpdateNote updates the description and/or timestamp of an existing note.
-func (tm *TodoManager) UpdateNote(noteID int64, description string, timestampStr string, isTimestampSet bool) {
+func (tm *TodoManager) UpdateNote(noteID int64, description string, timestampStr string, isTimestampSet bool, newTaskID int64) {
     updates := []string{}
     args := []any{}
 
@@ -1669,6 +1669,20 @@ func (tm *TodoManager) UpdateNote(noteID int64, description string, timestampStr
         args = append(args, sqlParsedTime)
     }
 
+    if newTaskID != 0 {
+        // Verify that the new task ID exists before updating
+        var exists bool
+        err := tm.db.QueryRow("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)", newTaskID).Scan(&exists)
+        if err != nil {
+            log.Fatalf("Error checking if task %d exists: %v", newTaskID, err)
+        }
+        if !exists {
+            log.Fatalf("Task with ID %d does not exist. Cannot move note to non-existent task.", newTaskID)
+        }
+        updates = append(updates, "task_id = ?")
+        args = append(args, newTaskID)
+    }
+
     if len(updates) == 0 {
         fmt.Printf("No update parameters provided for note ID %d.\n", noteID)
         return
@@ -1688,7 +1702,76 @@ func (tm *TodoManager) UpdateNote(noteID int64, description string, timestampStr
     if rowsAffected == 0 {
         fmt.Printf("Note %d not found or values were not changed.\n", noteID)
     } else {
-        fmt.Printf("Note %d updated successfully.\n", noteID)
+        if newTaskID != 0 {
+            fmt.Printf("Note %d updated successfully and moved to task %d.\n", noteID, newTaskID)
+        } else {
+            fmt.Printf("Note %d updated successfully.\n", noteID)
+        }
+    }
+}
+
+// MoveNotes moves multiple notes to a different task.
+func (tm *TodoManager) MoveNotes(noteIDs []int64, targetTaskID int64) {
+    if len(noteIDs) == 0 {
+        fmt.Println("No note IDs provided for moving.")
+        return
+    }
+
+    // Verify that the target task exists
+    var taskExists bool
+    err := tm.db.QueryRow("SELECT EXISTS(SELECT 1 FROM tasks WHERE id = ?)", targetTaskID).Scan(&taskExists)
+    if err != nil {
+        log.Fatalf("Error checking if target task %d exists: %v", targetTaskID, err)
+    }
+    if !taskExists {
+        log.Fatalf("Target task with ID %d does not exist. Cannot move notes to non-existent task.", targetTaskID)
+    }
+
+    // Start a transaction for multiple updates
+    tx, err := tm.db.Begin()
+    if err != nil {
+        log.Fatalf("Error starting transaction for moving notes: %v", err)
+    }
+    defer tx.Rollback() // Ensure rollback if any operation fails
+
+    updateQuery := `UPDATE task_notes SET task_id = ? WHERE id = ?`
+    stmt, err := tx.Prepare(updateQuery)
+    if err != nil {
+        log.Fatalf("Error preparing update statement for moving notes: %v", err)
+    }
+    defer stmt.Close()
+
+    movedCount := 0
+    notFoundCount := 0
+
+    for _, noteID := range noteIDs {
+        res, err := stmt.Exec(targetTaskID, noteID)
+        if err != nil {
+            log.Printf("Error moving note %d: %v", noteID, err)
+            continue // Continue to next note even if one fails
+        }
+        rowsAffected, err := res.RowsAffected()
+        if err != nil {
+            log.Printf("Error checking rows affected for note %d move: %v", noteID, err)
+        }
+        if rowsAffected == 0 {
+            fmt.Printf("Note %d not found.\n", noteID)
+            notFoundCount++
+        } else {
+            movedCount++
+        }
+    }
+
+    if err := tx.Commit(); err != nil {
+        log.Fatalf("Error committing note move transaction: %v", err)
+    }
+
+    // Print summary
+    if movedCount > 0 {
+        fmt.Printf("Successfully moved %d note(s) to task %d.\n", movedCount, targetTaskID)
+    }
+    if notFoundCount > 0 {
+        fmt.Printf("%d note(s) were not found.\n", notFoundCount)
     }
 }
 

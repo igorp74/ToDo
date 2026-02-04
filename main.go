@@ -17,7 +17,7 @@ func main() {
     dbPath := parser.String("db-path", "", &Options{Help: "Custom path and name for the database file (e.g., /path/to/my/todo.db)"})
 
     // Help command
-    helpCmd                := parser.NewCommand("help", "Show all commands and options")
+    helpCmd               := parser.NewCommand("help", "Show all commands and options")
 
     // Add command
     addCmd                := parser.NewCommand("add", "Add a new todo task.")
@@ -91,6 +91,7 @@ func main() {
     updateNoteID          := updateNoteCmd.Int("id"            , "n" , &Options{Required: true, Help: "Permanent database ID of the note to update (as shown in 'list' command)"})
     updateNoteDescription := updateNoteCmd.String("description", "d" , &Options{Help: "New description for the note"})
     updateNoteTimestamp   := updateNoteCmd.String("timestamp"  , "ts", &Options{Help: "New timestamp for the note (YYYY-MM-DD HH:MM:SS orYYYY-MM-DD). Use empty string with flag to set current time."})
+    updateNoteTaskID      := updateNoteCmd.Int("task-id"       , "ti", &Options{Help: "Move note to a different task by specifying the new task ID"})
 
     // Delete Note command
     deleteNoteCmd         := parser.NewCommand("delete-note"   , "Delete one or more notes by ID.")
@@ -99,6 +100,10 @@ func main() {
     deleteNoteTaskID      := deleteNoteCmd.Int("task-id"       , "ti", &Options{Help: "ID of the task whose notes should be deleted"})
     deleteNoteAllForTask  := deleteNoteCmd.Flag("all-for-task" , "ai"  , &Options{Help: "Delete all notes associated with the specified task ID"})
 
+    // Move Notes command
+    moveNotesCmd          := parser.NewCommand("move-notes"    , "Move one or more notes to a different task.")
+    moveNotesIDs          := moveNotesCmd.String("ids"         , "I" , &Options{Required: true, Help: "Comma-separated IDs or ID ranges of notes to move (e.g., '1,2,3-5,10')"})
+    moveNotesToTaskID     := moveNotesCmd.Int("to-task"        , "t" , &Options{Required: true, Help: "Target task ID to move the notes to"})
 
     // List command
     listCmd             := parser.NewCommand("list", "List tasks.")
@@ -373,14 +378,14 @@ func main() {
     case addNoteCmd.Parsed:
         tm.AddNoteToTask(int64(*addNoteTaskID), *addNoteDescription, *addNoteTimestamp, addNoteCmd.GetFlag("timestamp").IsSet) // Pass timestamp and IsSet
     case updateNoteCmd.Parsed:
-        // Check if at least one of description or timestamp is provided
-        if *updateNoteDescription == "" && !updateNoteCmd.GetFlag("timestamp").IsSet {
-            fmt.Println("At least one of --description or --timestamp must be provided for 'update-note' command.")
+        // Check if at least one of description, timestamp, or task-id is provided
+        if *updateNoteDescription == "" && !updateNoteCmd.GetFlag("timestamp").IsSet && *updateNoteTaskID == 0 {
+            fmt.Println("At least one of --description, --timestamp, or --task-id must be provided for 'update-note' command.")
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
-        // Pass the directly provided note ID for update
-        tm.UpdateNote(int64(*updateNoteID), *updateNoteDescription, *updateNoteTimestamp, updateNoteCmd.GetFlag("timestamp").IsSet)
+        // Pass the directly provided note ID for update, including the new task ID if provided
+        tm.UpdateNote(int64(*updateNoteID), *updateNoteDescription, *updateNoteTimestamp, updateNoteCmd.GetFlag("timestamp").IsSet, int64(*updateNoteTaskID))
     case deleteNoteCmd.Parsed:
         // Prioritize specific task notes deletion, then global all, then specific note IDs
         if *deleteNoteTaskID != 0 && *deleteNoteAllForTask {
@@ -400,6 +405,14 @@ func main() {
             fmt.Println(parser.Usage(nil))
             os.Exit(1)
         }
+    case moveNotesCmd.Parsed:
+        noteIDsToMove, parseErr := parseIDs(*moveNotesIDs)
+        if parseErr != nil {
+            fmt.Printf("Error parsing note IDs: %v\n", parseErr)
+            fmt.Println(parser.Usage(nil))
+            os.Exit(1)
+        }
+        tm.MoveNotes(noteIDsToMove, int64(*moveNotesToTaskID))
     case listCmd.Parsed:
         var parsedTaskIDs []int64
         if *listTaskIDs != "" {
@@ -955,11 +968,11 @@ func (p *Parser) Parse(args []string) error {
 func (p *Parser) Usage(err error) string {
     var sb strings.Builder
     if err != nil {
-        sb.WriteString(fmt.Sprintf("Error: %s\n\n", err))
+        fmt.Fprintf(&sb, "Error: %s\n\n", err)
     }
-    sb.WriteString(fmt.Sprintf("\n%s%sToDo%s - %s%s%s\n", style_bold, fg_green, style_reset, fg_green, p.Help, style_reset))
+    fmt.Fprintf(&sb, "\n%s%sToDo%s - %s%s%s\n", style_bold, fg_green, style_reset, fg_green, p.Help, style_reset)
     sb.WriteString("------------------------------------------------------------------------------------\n")
-    sb.WriteString(fmt.Sprintf("%sUsage%s: %s [global options] <command> [command options]\n\n", style_bold, style_reset, p.Name))
+    fmt.Fprintf(&sb, "%sUsage%s: %s [global options] <command> [command options]\n\n", style_bold, style_reset, p.Name)
 
     // Global flags usage
     if len(p.Flags) > 0 {
@@ -973,14 +986,14 @@ func (p *Parser) Usage(err error) string {
             if flag.Options != nil && flag.Options.Default != nil {
                 defaultValue = fmt.Sprintf(" (default: %v)", flag.Options.Default)
             }
-            sb.WriteString(fmt.Sprintf("  %s%s--%s%s   %s%s\n", short, fg_blue, flag.Name, style_reset, flag.Options.Help, defaultValue))
+            fmt.Fprintf(&sb, "  %s%s--%s%s   %s%s\n", short, fg_blue, flag.Name, style_reset, flag.Options.Help, defaultValue)
         }
         sb.WriteString("\n")
     }
 
     sb.WriteString("Commands:\n")
     for _, cmd := range p.Commands {
-        sb.WriteString(fmt.Sprintf("\n  %s%s%s   %s%s%s%s\n", style_bold, fg_green, cmd.Name, style_reset, fg_green, cmd.Help, style_reset))
+        fmt.Fprintf(&sb, "\n  %s%s%s   %s%s%s%s\n", style_bold, fg_green, cmd.Name, style_reset, fg_green, cmd.Help, style_reset)
         if len(cmd.Flags) > 0 {
             for _, flag := range cmd.Flags {
                 short := ""
@@ -995,14 +1008,14 @@ func (p *Parser) Usage(err error) string {
                 if flag.Options != nil && flag.Options.Default != nil {
                     defaultValue = fmt.Sprintf(" (default: %v)", flag.Options.Default)
                 }
-                sb.WriteString(fmt.Sprintf("  %s%s%s%s | %s--%-20s%s %s%s%s%s%s%s%s\n", style_bold, fg_blue, short, style_reset, fg_blue, flag.Name, style_reset, flag.Options.Help, fg_red, required, style_reset, fg_magenta, defaultValue, style_reset))
+                fmt.Fprintf(&sb, "  %s%s%s%s | %s--%-20s%s %s%s%s%s%s%s%s\n", style_bold, fg_blue, short, style_reset, fg_blue, flag.Name, style_reset, flag.Options.Help, fg_red, required, style_reset, fg_magenta, defaultValue, style_reset)
             }
         }
         // List subcommands
         if len(cmd.Commands) > 0 {
-            sb.WriteString(fmt.Sprintf("    Subcommands for %s:\n", cmd.Name))
+            fmt.Fprintf(&sb, "    Subcommands for %s:\n", cmd.Name)
             for _, subCmd := range cmd.Commands {
-                sb.WriteString(fmt.Sprintf("       %s%s%s%s  %s%s%s\n",style_bold, fg_yellow, subCmd.Name, style_reset, fg_yellow, subCmd.Help, style_reset))
+                fmt.Fprintf(&sb, "       %s%s%s%s  %s%s%s\n", style_bold, fg_yellow, subCmd.Name, style_reset, fg_yellow, subCmd.Help, style_reset)
                 for _, flag := range subCmd.Flags {
                     short := ""
                     if flag.Short != "" {
@@ -1017,7 +1030,7 @@ func (p *Parser) Usage(err error) string {
                         defaultValue = fmt.Sprintf(" (default: %v)", flag.Options.Default)
                     }
                     // Changed \\n to \n to correctly render newlines
-                    sb.WriteString(fmt.Sprintf("        %s| %s--%s%s\t%s%s%s\n", short, fg_blue, flag.Name, style_reset, flag.Options.Help, required, defaultValue))
+                    fmt.Fprintf(&sb, "        %s| %s--%s%s\t%s%s%s\n", short, fg_blue, flag.Name, style_reset, flag.Options.Help, required, defaultValue)
                 }
             }
         }
